@@ -7,18 +7,20 @@ import { LocationConfirmation } from "./LocationConfirmation";
 import { IncidentDetails } from "./IncidentDetails";
 import { CommunityTab } from "@/components/features/community/CommunityTab";
 import { CreatePost } from "@/components/features/community/CreatePost";
+import { ResourcesTab } from "@/components/features/resources/ResourcesTab";
 import { BottomNav } from "@/components/ui/bottom-nav";
+import { AppHeader } from "@/components/ui/app-header";
 import { AnimatePresence, motion } from "framer-motion";
 import { toast } from "sonner";
 
-type ReportingStep = "home" | "type-selection" | "location" | "details" | "community" | "create-post";
+type ReportingStep = "home" | "type-selection" | "location" | "details" | "community" | "create-post" | "resources";
 
 export function IncidentReportingFlow() {
     const [step, setStep] = useState<ReportingStep>("home");
-    const [activeTab, setActiveTab] = useState<"home" | "community">("home");
+    const [activeTab, setActiveTab] = useState<"home" | "community" | "resources">("home");
     const [incidentData, setIncidentData] = useState<Record<string, string>>({});
 
-    const handleTabChange = (tab: "home" | "community") => {
+    const handleTabChange = (tab: "home" | "community" | "resources") => {
         setActiveTab(tab);
         setStep(tab);
     };
@@ -51,8 +53,13 @@ export function IncidentReportingFlow() {
         });
     };
 
+    // Determine if we should show the main header
+    const showHeader = step === "home" || step === "community" || step === "resources";
+
     return (
         <div className="h-screen w-full max-w-md mx-auto bg-background overflow-hidden relative shadow-xl flex flex-col">
+            {showHeader && <AppHeader />}
+
             <div className="flex-1 relative overflow-hidden">
                 <AnimatePresence mode="wait">
                     {step === "home" && (
@@ -76,6 +83,18 @@ export function IncidentReportingFlow() {
                             className="h-full"
                         >
                             <CommunityTab onCreatePost={() => setStep("create-post")} />
+                        </motion.div>
+                    )}
+
+                    {step === "resources" && (
+                        <motion.div
+                            key="resources"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="h-full"
+                        >
+                            <ResourcesTab />
                         </motion.div>
                     )}
 
@@ -141,7 +160,7 @@ export function IncidentReportingFlow() {
                 </AnimatePresence>
             </div>
 
-            {(step === "home" || step === "community") && (
+            {showHeader && (
                 <BottomNav activeTab={activeTab} onTabChange={handleTabChange} />
             )}
         </div>

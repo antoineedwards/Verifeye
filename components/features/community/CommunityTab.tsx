@@ -34,45 +34,63 @@ export function CommunityTab({ onCreatePost }: CommunityTabProps) {
     return (
         <div className="relative h-full bg-background flex flex-col">
             <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b p-4 flex justify-between items-center">
-                <h1 className="text-xl font-bold text-[var(--community-primary)]">Community</h1>
-                <Button variant="ghost" size="icon" onClick={onCreatePost}>
-                    <Plus className="h-6 w-6 text-[var(--community-primary)]" />
+                <div>
+                    <h1 className="text-xl font-bold bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">Community</h1>
+                    <p className="text-xs text-muted-foreground font-medium">Connect with your neighbors</p>
+                </div>
+                <Button size="icon" onClick={onCreatePost} className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 border-0 shadow-md">
+                    <Plus className="h-5 w-5 text-white" />
                 </Button>
             </header>
 
             <div className="flex-1 overflow-auto p-4 space-y-4 pb-24">
-                {posts.map((post) => (
-                    <motion.div
-                        key={post.id}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="bg-card border rounded-lg p-4 shadow-sm space-y-3"
-                    >
-                        <div className="flex justify-between items-start">
-                            <div>
-                                <span className="inline-block px-2 py-1 rounded-full bg-secondary text-xs font-medium mb-2">
-                                    {post.type}
-                                </span>
-                                <h3 className="font-semibold text-lg">{post.title}</h3>
-                            </div>
-                            <span className="text-xs text-muted-foreground">{post.time}</span>
-                        </div>
+                {posts.map((post) => {
+                    const isEvent = post.type === "Event";
+                    return (
+                        <motion.div
+                            key={post.id}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className={`bg-card border rounded-xl p-4 shadow-sm relative overflow-hidden ${isEvent ? "border-violet-200 bg-violet-50/30" : "border-border"}`}
+                        >
+                            {isEvent && (
+                                <div className="absolute top-0 right-0 w-24 h-24 bg-violet-500/5 rounded-bl-full -mr-4 -mt-4 pointer-events-none" />
+                            )}
 
-                        <p className="text-sm text-muted-foreground">{post.content}</p>
-
-                        <div className="flex items-center justify-between pt-2 border-t">
-                            <span className="text-xs text-muted-foreground font-mono">{post.author}</span>
-                            <div className="flex gap-4">
-                                <button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary">
-                                    <Heart className="h-4 w-4" /> {post.likes}
-                                </button>
-                                <button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary">
-                                    <MessageSquare className="h-4 w-4" /> {post.comments}
-                                </button>
+                            <div className="flex justify-between items-start mb-3">
+                                <div>
+                                    <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide mb-2 ${isEvent
+                                            ? "bg-violet-100 text-violet-700"
+                                            : "bg-secondary text-secondary-foreground"
+                                        }`}>
+                                        {post.type}
+                                    </span>
+                                    <h3 className="font-semibold text-lg leading-tight">{post.title}</h3>
+                                </div>
+                                <span className="text-xs font-medium text-muted-foreground bg-background/50 px-2 py-1 rounded-md border">{post.time}</span>
                             </div>
-                        </div>
-                    </motion.div>
-                ))}
+
+                            <p className="text-sm text-muted-foreground mb-4 leading-relaxed">{post.content}</p>
+
+                            <div className="flex items-center justify-between pt-3 border-t border-border/50">
+                                <div className="flex items-center gap-2">
+                                    <div className="h-6 w-6 rounded-full bg-gradient-to-br from-slate-200 to-slate-300 flex items-center justify-center text-[10px] font-bold text-slate-600">
+                                        {post.author.split('#')[1].substring(0, 2)}
+                                    </div>
+                                    <span className="text-xs text-muted-foreground font-medium">{post.author}</span>
+                                </div>
+                                <div className="flex gap-3">
+                                    <button className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-pink-500 transition-colors bg-secondary/50 px-2 py-1 rounded-md hover:bg-pink-50">
+                                        <Heart className="h-3.5 w-3.5" /> {post.likes}
+                                    </button>
+                                    <button className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-blue-500 transition-colors bg-secondary/50 px-2 py-1 rounded-md hover:bg-blue-50">
+                                        <MessageSquare className="h-3.5 w-3.5" /> {post.comments}
+                                    </button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    );
+                })}
             </div>
         </div>
     );

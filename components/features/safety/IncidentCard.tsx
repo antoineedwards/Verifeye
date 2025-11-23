@@ -38,33 +38,60 @@ export function IncidentCard({ id, type, description, location, time, status: in
         });
     };
 
+    const getStatusColor = (s: string) => {
+        switch (s) {
+            case "Verified": return "bg-emerald-100 text-emerald-700 border-emerald-200";
+            case "Unverified": return "bg-amber-100 text-amber-700 border-amber-200";
+            default: return "bg-blue-100 text-blue-700 border-blue-200";
+        }
+    };
+
+    const getTypeStyles = (t: string) => {
+        switch (t) {
+            case "Crime": return {
+                bg: "bg-gradient-to-br from-red-50 to-background",
+                border: "border-red-200",
+                iconBg: "bg-red-100",
+                iconColor: "text-red-600"
+            };
+            case "Hazard": return {
+                bg: "bg-gradient-to-br from-orange-50 to-background",
+                border: "border-orange-200",
+                iconBg: "bg-orange-100",
+                iconColor: "text-orange-600"
+            };
+            default: return {
+                bg: "bg-gradient-to-br from-blue-50 to-background",
+                border: "border-blue-200",
+                iconBg: "bg-blue-100",
+                iconColor: "text-blue-600"
+            };
+        }
+    };
+
+    const styles = getTypeStyles(type);
+
     return (
         <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-card border rounded-xl overflow-hidden shadow-sm"
+            className={`bg-card border rounded-xl overflow-hidden shadow-sm ${styles.bg} ${styles.border}`}
         >
             <div className="p-4 space-y-3">
                 <div className="flex justify-between items-start">
-                    <div className="flex items-center gap-2">
-                        <div className={`p-2 rounded-full ${type === "Crime" ? "bg-red-100 text-red-600" :
-                                type === "Hazard" ? "bg-orange-100 text-orange-600" :
-                                    "bg-blue-100 text-blue-600"
-                            }`}>
+                    <div className="flex items-center gap-3">
+                        <div className={`p-2.5 rounded-xl shadow-sm ${styles.iconBg} ${styles.iconColor}`}>
                             <AlertTriangle className="h-5 w-5" />
                         </div>
                         <div>
-                            <h3 className="font-semibold">{type}</h3>
+                            <h3 className="font-semibold text-base">{type}</h3>
                             <div className="flex items-center text-xs text-muted-foreground">
                                 <MapPin className="h-3 w-3 mr-1" />
                                 {location}
                             </div>
                         </div>
                     </div>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${status === "Verified" ? "bg-green-100 text-green-700" :
-                            status === "Unverified" ? "bg-yellow-100 text-yellow-700" :
-                                "bg-blue-100 text-blue-700"
-                        }`}>
+                    <span className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${getStatusColor(status)}`}>
                         {status}
                     </span>
                 </div>

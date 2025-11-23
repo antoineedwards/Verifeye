@@ -1,9 +1,9 @@
 import { Button } from "@/components/ui/button";
-import { Home, Users } from "lucide-react";
+import { Home, Users, BookOpen } from "lucide-react";
 
 interface BottomNavProps {
-    activeTab: "home" | "community";
-    onTabChange: (tab: "home" | "community") => void;
+    activeTab: "home" | "community" | "resources";
+    onTabChange: (tab: "home" | "community" | "resources") => void;
 }
 
 export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
@@ -27,6 +27,16 @@ export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
             >
                 <Users className="h-6 w-6" />
                 <span className="text-xs">Community</span>
+            </Button>
+
+            <Button
+                variant="ghost"
+                className={`flex-col gap-1 h-full w-full rounded-none ${activeTab === "resources" ? "text-primary" : "text-muted-foreground"
+                    }`}
+                onClick={() => onTabChange("resources")}
+            >
+                <BookOpen className="h-6 w-6" />
+                <span className="text-xs">Resources</span>
             </Button>
         </div>
     );
