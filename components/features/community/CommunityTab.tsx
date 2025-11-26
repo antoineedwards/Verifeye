@@ -28,6 +28,36 @@ export function CommunityTab({ onCreatePost }: CommunityTabProps) {
             likes: 24,
             comments: 8,
             time: "5h ago"
+        },
+        {
+            id: 3,
+            title: "Gardening Tools to Share",
+            type: "General",
+            content: "I have a lawn mower and hedge trimmer available for anyone to borrow this weekend.",
+            author: "Neighbor #1024",
+            likes: 15,
+            comments: 2,
+            time: "1d ago"
+        },
+        {
+            id: 4,
+            title: "Book Club Meeting",
+            type: "Event",
+            content: "Next meeting is at the community center. We're discussing 'The Great Gatsby'.",
+            author: "Neighbor #5567",
+            likes: 18,
+            comments: 5,
+            time: "2d ago"
+        },
+        {
+            id: 5,
+            title: "Found Keys",
+            type: "Lost & Found",
+            content: "Found a set of keys near the park entrance. Turned them into the management office.",
+            author: "Neighbor #3342",
+            likes: 8,
+            comments: 1,
+            time: "3d ago"
         }
     ]);
 
@@ -60,8 +90,8 @@ export function CommunityTab({ onCreatePost }: CommunityTabProps) {
                             <div className="flex justify-between items-start mb-3">
                                 <div>
                                     <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide mb-2 ${isEvent
-                                            ? "bg-violet-100 text-violet-700"
-                                            : "bg-secondary text-secondary-foreground"
+                                        ? "bg-violet-100 text-violet-700"
+                                        : "bg-secondary text-secondary-foreground"
                                         }`}>
                                         {post.type}
                                     </span>

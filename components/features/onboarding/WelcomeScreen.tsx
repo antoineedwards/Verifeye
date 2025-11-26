@@ -14,7 +14,10 @@ export function WelcomeScreen({ onNext }: WelcomeScreenProps) {
                 transition={{ duration: 0.5 }}
                 className="space-y-4"
             >
-                <h1 className="text-4xl font-bold tracking-tight text-primary">Verifeye</h1>
+                <div className="flex justify-center mb-4">
+                    <img src="/logo.png" alt="Verifeye Logo" className="w-50 h-50 object-contain" />
+                </div>
+                {/*<h1 className="text-4xl font-bold tracking-tight text-primary">Verifeye</h1>*/}
                 <p className="text-lg text-muted-foreground">
                     Connect with your verified neighbors. Build a safer community together.
                 </p>

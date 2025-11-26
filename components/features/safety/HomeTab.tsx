@@ -25,6 +25,24 @@ export function HomeTab({ onReport }: HomeTabProps) {
             time: "45m ago",
             status: "Verified" as const,
             verifiedCount: 5
+        },
+        {
+            id: "3",
+            type: "Hazard",
+            description: "Street light out at the corner of Elm and Pine.",
+            location: "Elm St & Pine Ave",
+            time: "1h ago",
+            status: "Unverified" as const,
+            verifiedCount: 0
+        },
+        {
+            id: "4",
+            type: "Crime",
+            description: "Package theft reported from porch.",
+            location: "123 Cedar Dr",
+            time: "2h ago",
+            status: "Verified" as const,
+            verifiedCount: 3
         }
     ];
 
