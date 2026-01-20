@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
+import SignIn from "@/components/features/onboarding/SignIn"
 
 interface WelcomeScreenProps {
     onNext: () => void;
@@ -33,9 +34,7 @@ export function WelcomeScreen({ onNext }: WelcomeScreenProps) {
                     <Button onClick={onNext} className="w-full h-12 text-lg font-medium">
                         Sign Up with Email
                     </Button>
-                    <Button variant="outline" className="w-full h-12 text-lg font-medium">
-                        Continue with Google
-                    </Button>
+                    <SignIn/>
                     <Button variant="ghost" className="w-full text-sm text-muted-foreground">
                         Already have an account? Log in
                     </Button>
