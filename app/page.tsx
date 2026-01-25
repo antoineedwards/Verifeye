@@ -1,29 +1,33 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react"; // Import to check auth state
 import { OnboardingFlow } from "@/components/features/onboarding/OnboardingFlow";
 import { IncidentReportingFlow } from "@/components/features/safety/IncidentReportingFlow";
 
 export default function Home() {
-  // In a real app, we would check auth state here
+  const { data: session, status } = useSession(); // Check if user is authenticated
   const [isVerified, setIsVerified] = useState(false);
+  const [startStep, setStartStep] = useState<"welcome" | "geofence">(
+    status === "authenticated" && session ? "geofence" : "welcome"
+  );
+
+  useEffect(() => {
+    if (status === "authenticated" && session) {
+      // If authenticated, start at geofence step
+      setStartStep("geofence");
+    }
+  }, [status, session]);
+
+  if (status === "loading") {
+    return <div>Loading...</div>; // Optional loading state
+  }
 
   if (!isVerified) {
     return (
       <main className="min-h-screen bg-background">
         <div className="h-screen w-full max-w-md mx-auto bg-background overflow-hidden relative shadow-xl">
-          {/* 
-            We need to pass a callback to OnboardingFlow to know when it's done.
-            However, the current OnboardingFlow implementation doesn't expose a top-level completion prop 
-            that switches the state *outside* of itself easily without modifying it.
-            
-            Let's modify OnboardingFlow to accept an onComplete prop or just handle the 'success' step 
-            by calling a parent function.
-            
-            Wait, OnboardingFlow's VerificationSuccess component calls onComplete.
-            We need to wire that up.
-          */}
-          <OnboardingFlow onComplete={() => setIsVerified(true)} />
+          <OnboardingFlow onComplete={() => setIsVerified(true)} initialStep={startStep} />
         </div>
       </main>
     );

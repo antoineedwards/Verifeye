@@ -19,10 +19,12 @@ type OnboardingStep =
 
 interface OnboardingFlowProps {
     onComplete: () => void;
+    initialStep?: "welcome" | "geofence"; // Ensure this matches your step types
+
 }
 
-export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
-    const [step, setStep] = useState<OnboardingStep>("welcome");
+export function OnboardingFlow({ onComplete, initialStep }: OnboardingFlowProps) {
+    const [step, setStep] = useState<OnboardingStep>(initialStep || "welcome");
 
     const nextStep = (next: OnboardingStep) => setStep(next);
 
