@@ -12,10 +12,10 @@ export async function saveUserAddress(address: string) {
     if (!session?.user?.id) throw new Error("Unauthorized")
 
     const { error } = await supabase
+        .schema("next_auth") // Important: specify the schema
         .from("users")
         .update({ address: address })
         .eq("id", session.user.id)
-        .schema("next_auth") // Important: specify the schema
 
     return { success: !error }
 }
