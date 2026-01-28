@@ -4,6 +4,8 @@ import { Input } from "@/components/ui/input";
 import { motion } from "framer-motion";
 import { MapPin, Loader2 } from "lucide-react";
 import dynamic from "next/dynamic";
+import { saveUserAddress } from "@/app/actions/user";
+import { useFormStatus } from "react-dom";
 
 interface GeofenceLocatorProps {
     onNext: () => void;
@@ -15,6 +17,8 @@ export function GeofenceLocator({ onNext, onBack }: GeofenceLocatorProps) {
     const [isLoading, setIsLoading] = useState(false);
 
     const [mapCenter, setMapCenter] = useState<[number, number]>([32.3668, -86.3000]);
+
+    const { pending } = useFormStatus()
 
     // Dynamically import the map component to avoid SSR issues
     const Map = useMemo(() => dynamic(
@@ -86,11 +90,14 @@ export function GeofenceLocator({ onNext, onBack }: GeofenceLocatorProps) {
                 </div>
 
                 <Button
-                    onClick={onNext}
                     disabled={!address}
                     className="w-full h-12 text-lg mt-4"
+                    onClick={() => {
+                        onNext();
+                        saveUserAddress(address);
+                    }}
                 >
-                    Continue
+                    {pending ? "Saving..." : "Continue"}
                 </Button>
             </motion.div>
         </div>
