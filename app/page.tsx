@@ -1,41 +1,36 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useSession } from "next-auth/react"; // Import to check auth state
-import { OnboardingFlow } from "@/components/features/onboarding/OnboardingFlow";
-import { IncidentReportingFlow } from "@/components/features/safety/IncidentReportingFlow";
+import { useRouter } from "next/navigation";
+import { WelcomeScreen } from "@/components/features/onboarding/WelcomeScreen";
 
 export default function Home() {
   const { data: session, status } = useSession(); // Check if user is authenticated
-  const [isVerified, setIsVerified] = useState(false);
-  const [startStep, setStartStep] = useState<"welcome" | "geofence">(
-    status === "authenticated" && session ? "geofence" : "welcome"
-  );
+  const router = useRouter();
 
   useEffect(() => {
+    // If authenticated, redirect to onboarding page
     if (status === "authenticated" && session) {
-      // If authenticated, start at geofence step
-      setStartStep("geofence");
+      router.push("/onboarding");
     }
-  }, [status, session]);
+  }, [status, session, router]);
 
   if (status === "loading") {
     return <div>Loading...</div>; // Optional loading state
   }
 
-  if (!isVerified) {
-    return (
-      <main className="min-h-screen bg-background">
-        <div className="h-screen w-full max-w-md mx-auto bg-background overflow-hidden relative shadow-xl">
-          <OnboardingFlow onComplete={() => setIsVerified(true)} initialStep={startStep} />
-        </div>
-      </main>
-    );
+  // If authenticated, return null while redirecting
+  if (status === "authenticated" && session) {
+    return null;
   }
 
+  // Show welcome screen for unauthenticated users
   return (
     <main className="min-h-screen bg-background">
-      <IncidentReportingFlow />
+      <div className="h-screen w-full max-w-md mx-auto bg-background overflow-hidden relative shadow-xl">
+        <WelcomeScreen onNext={() => router.push("/onboarding")} />
+      </div>
     </main>
   );
 }

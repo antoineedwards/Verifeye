@@ -4,7 +4,7 @@ import { signIn } from "next-auth/react" // NOTE: Import from 'next-auth/react',
 export function GoogleSignIn() {
   return (
     <button
-      onClick={() => signIn("google", { callbackUrl: "/" })}
+      onClick={() => signIn("google", { callbackUrl: "/onboarding" })}
       className="w-full bg-blue-600 text-white p-2 rounded-md hover:bg-blue-700 transition"
     >
       Sign in with Google
