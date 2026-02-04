@@ -22,13 +22,13 @@ export async function verifyUserDocument(formData: FormData) {
   try {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
-    
+
     // Load the file into Mindee
     const inputSource = mindeeClient.docFromBuffer(buffer, file.name);
 
     // 2. Parse using the Financial Document model (Best for Bills)
     const apiResponse = await mindeeClient.parse(
-      mindee.product.FinancialDocumentV1, 
+      mindee.product.FinancialDocumentV1,
       inputSource
     );
 
@@ -55,9 +55,9 @@ export async function verifyUserDocument(formData: FormData) {
       return { success: true, message: "Verification Successful!" };
     }
 
-    return { 
-      success: false, 
-      message: "Could not find matching name and address on the document." 
+    return {
+      success: false,
+      message: "Could not find matching name and address on the document."
     };
 
   } catch (error) {

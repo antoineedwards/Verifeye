@@ -46,7 +46,7 @@
     "typescript": "^5"
   },
   "optionalDependencies": {
-  "@img/sharp-darwin-arm64": "latest",
-  "@img/sharp-linux-x64": "latest"
-}
+    "@img/sharp-darwin-arm64": "latest",
+    "@img/sharp-linux-x64": "latest"
+  }
 }
