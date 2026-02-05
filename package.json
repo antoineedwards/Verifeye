@@ -31,7 +31,6 @@
     "resend": "^6.8.0",
     "sharp": "^0.34.5",
     "sonner": "^2.0.7",
-    "supabase": "^2.74.5",
     "tailwind-merge": "^3.4.0"
   },
   "devDependencies": {
