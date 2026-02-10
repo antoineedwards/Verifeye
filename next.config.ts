@@ -2,17 +2,6 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   /* config options here */
-  turbopack: {
-      resolveAlias: {
-        canvas: './empty-module.js',
-      },
-    },
-
-    // 2. For the Build (Webpack is still used for 'next build')
-    webpack: (config) => {
-      config.resolve.alias.canvas = false;
-      return config;
-    },
   experimental: {
     serverActions: {
       allowedOrigins: [
