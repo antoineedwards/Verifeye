@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
   experimental: {
     serverActions: {
       allowedOrigins: [
-        //'zany-happiness-699vj9g97x76cx45j-3000.app.github.dev', // Copy this from your error message
+        'zany-happiness-699vj9g97x76cx45j-3000.app.github.dev', // Copy this from your error message
         'localhost:3000'
       ],
     },
