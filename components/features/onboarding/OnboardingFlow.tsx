@@ -6,12 +6,14 @@ import { GeofenceLocator } from "./GeofenceLocator";
 import { VerificationSelection } from "./VerificationSelection";
 import { ResidencyVerification } from "./ResidencyVerification";
 import { CampusVerification } from "./CampusVerification";
+import { DocumentUpload } from "./DocumentUpload";
 import { VerificationSuccess } from "./VerificationSuccess";
 import { AnimatePresence, motion } from "framer-motion";
 
 type OnboardingStep =
     | "welcome"
     | "geofence"
+    | "document-upload"
     | "selection"
     | "residency"
     | "campus"
@@ -44,15 +46,21 @@ export function OnboardingFlow({ onComplete, initialStep }: OnboardingFlowProps)
                     )}
                     {step === "geofence" && (
                         <GeofenceLocator
-                            onNext={() => nextStep("selection")}
+                            onNext={() => nextStep("document-upload")}
                             onBack={() => nextStep("welcome")}
+                        />
+                    )}
+                    {step === "document-upload" && (
+                        <DocumentUpload
+                            onVerify={() => nextStep("selection")}
+                            onBack={() => nextStep("geofence")}
                         />
                     )}
                     {step === "selection" && (
                         <VerificationSelection
                             onSelectResidency={() => nextStep("residency")}
                             onSelectCampus={() => nextStep("campus")}
-                            onBack={() => nextStep("geofence")}
+                            onBack={() => nextStep("document-upload")}
                         />
                     )}
                     {step === "residency" && (
