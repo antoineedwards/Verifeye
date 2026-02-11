@@ -9,7 +9,15 @@ import { useRouter } from "next/navigation";
 export default function OnboardingPage() {
     const { data: session, status } = useSession();
     const router = useRouter();
-    const [isVerified, setIsVerified] = useState(false);
+    // If the user already has an address, they are considered "verified" (or at least onboarded enough to skip geofence)
+    const [isVerified, setIsVerified] = useState(() => {
+        return !!(session?.user as any)?.address;
+    });
+
+    // Update isVerified if session loads later
+    if (status === "authenticated" && !isVerified && (session?.user as any)?.address) {
+        setIsVerified(true);
+    }
 
     // Redirect to home if not authenticated
     if (status === "unauthenticated") {

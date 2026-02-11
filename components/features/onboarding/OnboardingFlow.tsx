@@ -52,7 +52,7 @@ export function OnboardingFlow({ onComplete, initialStep }: OnboardingFlowProps)
                     )}
                     {step === "document-upload" && (
                         <DocumentUpload
-                            onVerify={() => nextStep("selection")}
+                            onVerify={() => nextStep("success")}
                             onBack={() => nextStep("geofence")}
                         />
                     )}
