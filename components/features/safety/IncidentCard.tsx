@@ -1,3 +1,4 @@
+import { verifyReport } from "@/app/actions/reports";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { MapPin, CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
@@ -6,27 +7,40 @@ import { toast } from "sonner";
 
 interface IncidentCardProps {
     id: string;
+    title?: string | null;
     type: string;
     description: string;
     location: string;
     time: string;
-    status: "Unverified" | "In Progress" | "Verified";
+    status: "Unverified" | "In Progress" | "Verified" | "Resolved";
     verifiedCount: number;
 }
 
-export function IncidentCard({ id, type, description, location, time, status: initialStatus, verifiedCount: initialCount }: IncidentCardProps) {
+export function IncidentCard({ id, title, type, description, location, time, status: initialStatus, verifiedCount: initialCount }: IncidentCardProps) {
     const [status, setStatus] = useState(initialStatus);
     const [verifiedCount, setVerifiedCount] = useState(initialCount);
     const [hasVoted, setHasVoted] = useState(false);
 
-    const handleVerify = () => {
+    const handleVerify = async () => {
         if (hasVoted) return;
-        setStatus("Verified");
-        setVerifiedCount(c => c + 1);
+
+        // Optimistic update
         setHasVoted(true);
-        toast.success("Verified! +50 Points", {
-            description: "New Badge: Community Watch",
-            duration: 3000,
+        setVerifiedCount(c => c + 1);
+
+        toast.promise(verifyReport(id), {
+            loading: "Verifying...",
+            success: (data) => {
+                if (data.success) {
+                    return "Verified! +50 Points. New Badge: Community Watch";
+                } else {
+                    // Rollback (simplified)
+                    setHasVoted(false);
+                    setVerifiedCount(c => c - 1);
+                    throw new Error(data.error);
+                }
+            },
+            error: "Failed to verify report"
         });
     };
 
@@ -41,26 +55,30 @@ export function IncidentCard({ id, type, description, location, time, status: in
     const getStatusColor = (s: string) => {
         switch (s) {
             case "Verified": return "bg-emerald-100 text-emerald-700 border-emerald-200";
+            case "Resolved": return "bg-blue-100 text-blue-700 border-blue-200"; // Blue for resolved
             case "Unverified": return "bg-amber-100 text-amber-700 border-amber-200";
-            default: return "bg-blue-100 text-blue-700 border-blue-200";
+            default: return "bg-slate-100 text-slate-700 border-slate-200";
         }
     };
 
     const getTypeStyles = (t: string) => {
-        switch (t) {
-            case "Crime": return {
+        const typeLower = t?.toLowerCase() || '';
+        if (typeLower.includes("crime")) {
+            return {
                 bg: "bg-gradient-to-br from-red-50 to-background",
                 border: "border-red-200",
                 iconBg: "bg-red-100",
                 iconColor: "text-red-600"
             };
-            case "Hazard": return {
+        } else if (typeLower.includes("hazard")) {
+            return {
                 bg: "bg-gradient-to-br from-orange-50 to-background",
                 border: "border-orange-200",
                 iconBg: "bg-orange-100",
                 iconColor: "text-orange-600"
             };
-            default: return {
+        } else {
+            return {
                 bg: "bg-gradient-to-br from-blue-50 to-background",
                 border: "border-blue-200",
                 iconBg: "bg-blue-100",
@@ -84,7 +102,7 @@ export function IncidentCard({ id, type, description, location, time, status: in
                             <AlertTriangle className="h-5 w-5" />
                         </div>
                         <div>
-                            <h3 className="font-semibold text-base">{type}</h3>
+                            <h3 className="font-semibold text-base">{title || type}</h3>
                             <div className="flex items-center text-xs text-muted-foreground">
                                 <MapPin className="h-3 w-3 mr-1" />
                                 {location}

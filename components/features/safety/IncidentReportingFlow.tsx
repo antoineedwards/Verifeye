@@ -13,12 +13,20 @@ import { AppHeader } from "@/components/ui/app-header";
 import { AnimatePresence, motion } from "framer-motion";
 import { toast } from "sonner";
 
+import { createReport } from "@/app/actions/reports";
+
 type ReportingStep = "home" | "type-selection" | "location" | "details" | "community" | "create-post" | "resources";
 
 export function IncidentReportingFlow() {
     const [step, setStep] = useState<ReportingStep>("home");
     const [activeTab, setActiveTab] = useState<"home" | "community" | "resources">("home");
-    const [incidentData, setIncidentData] = useState<Record<string, string>>({});
+    const [incidentData, setIncidentData] = useState<{
+        type?: string;
+        location?: string;
+        coordinates?: { lat: number; lng: number };
+        title?: string;
+        description?: string;
+    }>({});
 
     const handleTabChange = (tab: "home" | "community" | "resources") => {
         setActiveTab(tab);
@@ -30,18 +38,43 @@ export function IncidentReportingFlow() {
         setStep("location");
     };
 
-    const handleLocationConfirm = () => {
+    const handleLocationConfirm = (location: string, coordinates: { lat: number; lng: number }) => {
+        setIncidentData({ ...incidentData, location, coordinates });
         setStep("details");
     };
 
-    const handlePost = (details: { description: string }) => {
-        console.log("Posting incident:", { ...incidentData, ...details });
-        setStep("home");
-        setActiveTab("home");
-        toast.success("Report Posted!", {
-            description: "Neighbors are now being alerted.",
-            duration: 4000,
-        });
+    const handlePost = async (details: { title: string; description: string }) => {
+        const finalData = { ...incidentData, ...details };
+        console.log("Posting incident:", finalData);
+
+        try {
+            const result = await createReport({
+                title: finalData.title || "Untitled Report", // Should be provided
+                description: finalData.description || "",
+                category: finalData.type,
+                location_address: finalData.location || "Unknown Location",
+                latitude: finalData.coordinates?.lat,
+                longitude: finalData.coordinates?.lng,
+            });
+
+            if (result.success) {
+                setStep("home");
+                setActiveTab("home");
+                toast.success("Report Posted!", {
+                    description: "Neighbors are now being alerted.",
+                    duration: 4000,
+                });
+                // Reset data
+                setIncidentData({});
+            } else {
+                toast.error("Failed to post report", {
+                    description: result.error || "Please try again."
+                });
+            }
+        } catch (error) {
+            console.error("Failed to post report:", error);
+            toast.error("An error occurred");
+        }
     };
 
     const handleCommunityPost = (post: { title: string; content: string; type: string }) => {

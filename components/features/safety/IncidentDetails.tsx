@@ -1,15 +1,17 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { motion } from "framer-motion";
 import { Camera, Mic, Image as ImageIcon } from "lucide-react";
 
 interface IncidentDetailsProps {
-    onPost: (details: { description: string }) => void;
+    onPost: (details: { title: string; description: string }) => void;
     onBack: () => void;
 }
 
 export function IncidentDetails({ onPost, onBack }: IncidentDetailsProps) {
+    const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
 
     return (
@@ -31,6 +33,12 @@ export function IncidentDetails({ onPost, onBack }: IncidentDetailsProps) {
                 </div>
 
                 <div className="space-y-4">
+                    <Input
+                        placeholder="Title (e.g., Pothole on Main St)"
+                        className="text-lg h-12"
+                        value={title}
+                        onChange={(e) => setTitle(e.target.value)}
+                    />
                     <Textarea
                         placeholder="Describe the incident..."
                         className="h-32 resize-none text-lg"
@@ -57,8 +65,8 @@ export function IncidentDetails({ onPost, onBack }: IncidentDetailsProps) {
                 <div className="flex-1" />
 
                 <Button
-                    onClick={() => onPost({ description })}
-                    disabled={!description.trim()}
+                    onClick={() => onPost({ title, description })}
+                    disabled={!title.trim() || !description.trim()}
                     className="w-full h-12 text-lg bg-urgency-high hover:bg-urgency-high/90 text-white"
                 >
                     Post Report

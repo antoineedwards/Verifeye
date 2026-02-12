@@ -27,3 +27,18 @@ export async function saveUserAddress(address: string) {
 
     return { success: !error }
 }
+
+export async function getUserProfile() {
+    const session = await auth()
+    if (!session?.user?.id) return null
+
+    const { data: user, error } = await supabase
+        .schema("next_auth")
+        .from("users")
+        .select("name, email, image, address, level")
+        .eq("id", session.user.id)
+        .single()
+
+    if (error || !user) return null
+    return user
+}

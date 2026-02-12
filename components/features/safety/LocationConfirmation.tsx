@@ -3,11 +3,17 @@ import { motion } from "framer-motion";
 import { MapPin } from "lucide-react";
 
 interface LocationConfirmationProps {
-    onConfirm: () => void;
+    onConfirm: (location: string, coordinates: { lat: number; lng: number }) => void;
     onBack: () => void;
 }
 
 export function LocationConfirmation({ onConfirm, onBack }: LocationConfirmationProps) {
+    // Mock coordinates for Springfield
+    const mockLocation = {
+        address: "123 Main St, Springfield",
+        coordinates: { lat: 39.7817, lng: -89.6501 }
+    };
+
     return (
         <div className="flex flex-col h-full bg-background relative">
             {/* Map Mock Background */}
@@ -33,11 +39,14 @@ export function LocationConfirmation({ onConfirm, onBack }: LocationConfirmation
                 <div className="space-y-1">
                     <h3 className="font-semibold text-lg">Confirm Location</h3>
                     <p className="text-sm text-muted-foreground">
-                        123 Main St, Springfield
+                        {mockLocation.address}
                     </p>
                 </div>
 
-                <Button onClick={onConfirm} className="w-full h-12 text-lg">
+                <Button
+                    onClick={() => onConfirm(mockLocation.address, mockLocation.coordinates)}
+                    className="w-full h-12 text-lg"
+                >
                     Confirm Location
                 </Button>
             </div>
