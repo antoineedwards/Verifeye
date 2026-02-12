@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { ReportFAB } from "./ReportFAB";
 import { IncidentCard } from "./IncidentCard";
 import { getReports, Report } from "@/app/actions/reports";
+import { getUserProfile } from "@/app/actions/user";
 
 interface HomeTabProps {
     onReport: () => void;
@@ -10,15 +11,26 @@ interface HomeTabProps {
 export function HomeTab({ onReport }: HomeTabProps) {
     const [reports, setReports] = useState<Report[]>([]);
     const [loading, setLoading] = useState(true);
+    const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
     useEffect(() => {
-        const fetchReports = async () => {
-            const data = await getReports();
-            setReports(data);
+        const fetchData = async () => {
+            const [reportsData, userData] = await Promise.all([
+                getReports(),
+                getUserProfile()
+            ]);
+            setReports(reportsData);
+            if (userData) {
+                setCurrentUserId(userData.id);
+            }
             setLoading(false);
         };
-        fetchReports();
+        fetchData();
     }, []);
+
+    const handleDelete = (id: string) => {
+        setReports(reports.filter(r => r.id !== id));
+    };
 
     const formatTime = (dateString: string) => {
         const date = new Date(dateString);
@@ -52,6 +64,9 @@ export function HomeTab({ onReport }: HomeTabProps) {
                             time={formatTime(report.created_at)}
                             status={report.status === 'resolved' ? "Resolved" : (report.status === 'verified' ? "Verified" : "Unverified")}
                             verifiedCount={report.verification_count}
+                            reportUserId={report.user_id}
+                            currentUserId={currentUserId}
+                            onDelete={handleDelete}
                         />
                     ))
                 )}

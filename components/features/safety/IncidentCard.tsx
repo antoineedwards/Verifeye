@@ -1,7 +1,9 @@
-import { verifyReport } from "@/app/actions/reports";
+import { verifyReport, deleteReport, updateReport } from "@/app/actions/reports";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { motion } from "framer-motion";
-import { MapPin, CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
+import { MapPin, CheckCircle2, XCircle, AlertTriangle, Trash2, Edit2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -14,12 +16,35 @@ interface IncidentCardProps {
     time: string;
     status: "Unverified" | "In Progress" | "Verified" | "Resolved";
     verifiedCount: number;
+    reportUserId: string;
+    currentUserId?: string | null;
+    onDelete?: (id: string) => void;
 }
 
-export function IncidentCard({ id, title, type, description, location, time, status: initialStatus, verifiedCount: initialCount }: IncidentCardProps) {
+export function IncidentCard({
+    id,
+    title: initialTitle,
+    type,
+    description: initialDescription,
+    location,
+    time,
+    status: initialStatus,
+    verifiedCount: initialCount,
+    reportUserId,
+    currentUserId,
+    onDelete
+}: IncidentCardProps) {
     const [status, setStatus] = useState(initialStatus);
     const [verifiedCount, setVerifiedCount] = useState(initialCount);
     const [hasVoted, setHasVoted] = useState(false);
+
+    // Edit Mode State
+    const [isEditing, setIsEditing] = useState(false);
+    const [title, setTitle] = useState(initialTitle || "");
+    const [description, setDescription] = useState(initialDescription);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    const isOwner = currentUserId === reportUserId;
 
     const handleVerify = async () => {
         if (hasVoted) return;
@@ -52,10 +77,34 @@ export function IncidentCard({ id, title, type, description, location, time, sta
         });
     };
 
+    const handleDelete = async () => {
+        if (!confirm("Are you sure you want to delete this report?")) return;
+        setIsDeleting(true);
+
+        const result = await deleteReport(id);
+        if (result.success) {
+            toast.success("Report deleted");
+            if (onDelete) onDelete(id);
+        } else {
+            toast.error(result.error || "Failed to delete");
+            setIsDeleting(false);
+        }
+    };
+
+    const handleSave = async () => {
+        const result = await updateReport(id, { title, description });
+        if (result.success) {
+            toast.success("Report updated");
+            setIsEditing(false);
+        } else {
+            toast.error(result.error || "Failed to update");
+        }
+    };
+
     const getStatusColor = (s: string) => {
         switch (s) {
             case "Verified": return "bg-emerald-100 text-emerald-700 border-emerald-200";
-            case "Resolved": return "bg-blue-100 text-blue-700 border-blue-200"; // Blue for resolved
+            case "Resolved": return "bg-blue-100 text-blue-700 border-blue-200";
             case "Unverified": return "bg-amber-100 text-amber-700 border-amber-200";
             default: return "bg-slate-100 text-slate-700 border-slate-200";
         }
@@ -89,39 +138,77 @@ export function IncidentCard({ id, title, type, description, location, time, sta
 
     const styles = getTypeStyles(type);
 
+    if (isDeleting) return null; // Optimistic remove from view
+
     return (
         <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className={`bg-card border rounded-xl overflow-hidden shadow-sm ${styles.bg} ${styles.border}`}
+            className={`bg-card border rounded-xl overflow-hidden shadow-sm ${styles.bg} ${styles.border} relative group`}
         >
+            {isOwner && !isEditing && (
+                <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 bg-white/50 hover:bg-white" onClick={() => setIsEditing(true)}>
+                        <Edit2 className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 bg-white/50 hover:bg-white hover:text-red-600" onClick={handleDelete}>
+                        <Trash2 className="h-4 w-4" />
+                    </Button>
+                </div>
+            )}
+
             <div className="p-4 space-y-3">
                 <div className="flex justify-between items-start">
                     <div className="flex items-center gap-3">
                         <div className={`p-2.5 rounded-xl shadow-sm ${styles.iconBg} ${styles.iconColor}`}>
                             <AlertTriangle className="h-5 w-5" />
                         </div>
-                        <div>
-                            <h3 className="font-semibold text-base">{title || type}</h3>
-                            <div className="flex items-center text-xs text-muted-foreground">
+                        <div className="flex-1">
+                            {isEditing ? (
+                                <Input
+                                    value={title}
+                                    onChange={(e) => setTitle(e.target.value)}
+                                    className="h-8 font-semibold text-base mb-1"
+                                />
+                            ) : (
+                                <h3 className="font-semibold text-base">{title || type}</h3>
+                            )}
+                            <div className="flex items-center text-xs text-muted-foreground mr-8">
                                 <MapPin className="h-3 w-3 mr-1" />
                                 {location}
                             </div>
                         </div>
                     </div>
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${getStatusColor(status)}`}>
-                        {status}
-                    </span>
+                    {!isEditing && (
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${getStatusColor(status)}`}>
+                            {status}
+                        </span>
+                    )}
                 </div>
 
-                <p className="text-sm">{description}</p>
+                {isEditing ? (
+                    <Textarea
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        className="text-sm min-h-[80px]"
+                    />
+                ) : (
+                    <p className="text-sm">{description}</p>
+                )}
 
                 <div className="text-xs text-muted-foreground">
                     Posted {time} • Verified by {verifiedCount} neighbors
                 </div>
+
+                {isEditing && (
+                    <div className="flex gap-2 justify-end">
+                        <Button size="sm" variant="ghost" onClick={() => setIsEditing(false)}>Cancel</Button>
+                        <Button size="sm" onClick={handleSave}>Save Changes</Button>
+                    </div>
+                )}
             </div>
 
-            {!hasVoted && status === "Unverified" && (
+            {!hasVoted && status === "Unverified" && !isEditing && (
                 <div className="grid grid-cols-2 border-t divide-x">
                     <Button
                         variant="ghost"
@@ -142,7 +229,7 @@ export function IncidentCard({ id, title, type, description, location, time, sta
                 </div>
             )}
 
-            {hasVoted && (
+            {hasVoted && !isEditing && (
                 <div className="bg-muted/50 p-3 text-center text-xs text-muted-foreground border-t">
                     Thanks for your verification!
                 </div>

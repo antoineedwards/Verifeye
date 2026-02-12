@@ -35,7 +35,7 @@ export async function getUserProfile() {
     const { data: user, error } = await supabase
         .schema("next_auth")
         .from("users")
-        .select("name, email, image, address, level")
+        .select("id, name, email, image, address, level")
         .eq("id", session.user.id)
         .single()
 
