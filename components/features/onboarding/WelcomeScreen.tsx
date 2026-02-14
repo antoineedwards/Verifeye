@@ -1,13 +1,23 @@
+"use client"; // Ensure this is a client component
+
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import SignIn from "@/components/features/onboarding/SignIn"
 import { GoogleSignIn } from "@/components/auth/google-signin";
+import { useRouter } from "next/navigation"; // Import the router
 
 interface WelcomeScreenProps {
     onNext: () => void;
 }
 
 export function WelcomeScreen({ onNext }: WelcomeScreenProps) {
+    const router = useRouter();
+
+    const handleEmailSignUp = () => {
+        // Bypass onboarding and push to the main app route
+        // Replace "/dashboard" with whatever your main app route is (e.g., "/map" or "/home")
+        router.push("/onboarding");
+    };
+
     return (
         <div className="flex flex-col items-center justify-center h-full p-6 text-center space-y-8 bg-background">
             <motion.div
@@ -19,7 +29,6 @@ export function WelcomeScreen({ onNext }: WelcomeScreenProps) {
                 <div className="flex justify-center mb-4">
                     <img src="/logo.png" alt="Verifeye Logo" className="w-50 h-50 object-contain" />
                 </div>
-                {/*<h1 className="text-4xl font-bold tracking-tight text-primary">Verifeye</h1>*/}
                 <p className="text-lg text-muted-foreground">
                     Connect with your verified neighbors. Build a safer community together.
                 </p>
@@ -32,7 +41,8 @@ export function WelcomeScreen({ onNext }: WelcomeScreenProps) {
                 className="w-full max-w-sm space-y-4"
             >
                 <div className="space-y-2">
-                    <Button onClick={onNext} className="w-full h-12 text-lg font-medium">
+                    {/* ✅ Changed onClick to use handleEmailSignUp */}
+                    <Button onClick={handleEmailSignUp} className="w-full h-12 text-lg font-medium">
                         Sign Up with Email
                     </Button>
                     
@@ -46,3 +56,4 @@ export function WelcomeScreen({ onNext }: WelcomeScreenProps) {
         </div>
     );
 }
+
