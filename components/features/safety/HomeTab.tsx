@@ -66,6 +66,8 @@ export function HomeTab({ onReport }: HomeTabProps) {
                             verifiedCount={report.verification_count}
                             reportUserId={report.user_id}
                             currentUserId={currentUserId}
+                            imageUrl={report.image_url}
+                            isEdited={report.is_edited}
                             onDelete={handleDelete}
                         />
                     ))

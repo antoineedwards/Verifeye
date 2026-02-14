@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { HomeTab } from "./HomeTab";
 import { IncidentTypeSelection } from "./IncidentTypeSelection";
 import { LocationConfirmation } from "./LocationConfirmation";
@@ -20,6 +20,7 @@ type ReportingStep = "home" | "type-selection" | "location" | "details" | "commu
 export function IncidentReportingFlow() {
     const [step, setStep] = useState<ReportingStep>("home");
     const [activeTab, setActiveTab] = useState<"home" | "community" | "resources">("home");
+    const [isPosting, setIsPosting] = useState(false);
     const [incidentData, setIncidentData] = useState<{
         type?: string;
         location?: string;
@@ -43,18 +44,49 @@ export function IncidentReportingFlow() {
         setStep("details");
     };
 
-    const handlePost = async (details: { title: string; description: string }) => {
+    const handlePost = async (details: { title: string; description: string; image?: File }) => {
+        if (isPosting) return;
+        setIsPosting(true);
+
         const finalData = { ...incidentData, ...details };
         console.log("Posting incident:", finalData);
 
         try {
+            let imageUrl: string | undefined;
+
+            // Upload image if provided
+            if (details.image) {
+                toast.loading("Uploading image...", { id: "upload" });
+                const formData = new FormData();
+                formData.append("file", details.image);
+
+                const uploadRes = await fetch("/api/upload-image", {
+                    method: "POST",
+                    body: formData,
+                });
+
+                const uploadData = await uploadRes.json();
+                toast.dismiss("upload");
+
+                if (!uploadRes.ok) {
+                    toast.error("Image upload failed", {
+                        description: uploadData.error || "Please try again."
+                    });
+                    setIsPosting(false);
+                    return;
+                }
+
+                imageUrl = uploadData.url;
+            }
+
             const result = await createReport({
-                title: finalData.title || "Untitled Report", // Should be provided
+                title: finalData.title || "Untitled Report",
                 description: finalData.description || "",
                 category: finalData.type,
                 location_address: finalData.location || "Unknown Location",
                 latitude: finalData.coordinates?.lat,
                 longitude: finalData.coordinates?.lng,
+                image_url: imageUrl,
             });
 
             if (result.success) {
@@ -64,7 +96,6 @@ export function IncidentReportingFlow() {
                     description: "Neighbors are now being alerted.",
                     duration: 4000,
                 });
-                // Reset data
                 setIncidentData({});
             } else {
                 toast.error("Failed to post report", {
@@ -74,16 +105,13 @@ export function IncidentReportingFlow() {
         } catch (error) {
             console.error("Failed to post report:", error);
             toast.error("An error occurred");
+        } finally {
+            setIsPosting(false);
         }
     };
 
-    const handleCommunityPost = (post: { title: string; content: string; type: string }) => {
-        console.log("Posting to community:", post);
+    const handleCommunityPost = () => {
         setStep("community");
-        toast.success("Posted to Community!", {
-            description: "+10 Community Points earned",
-            duration: 3000,
-        });
     };
 
     // Determine if we should show the main header

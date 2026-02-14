@@ -18,6 +18,8 @@ interface IncidentCardProps {
     verifiedCount: number;
     reportUserId: string;
     currentUserId?: string | null;
+    imageUrl?: string | null;
+    isEdited?: boolean;
     onDelete?: (id: string) => void;
 }
 
@@ -32,6 +34,8 @@ export function IncidentCard({
     verifiedCount: initialCount,
     reportUserId,
     currentUserId,
+    imageUrl,
+    isEdited,
     onDelete
 }: IncidentCardProps) {
     const [status, setStatus] = useState(initialStatus);
@@ -157,6 +161,17 @@ export function IncidentCard({
                 </div>
             )}
 
+            {imageUrl && (
+                <div className="relative w-full h-40 overflow-hidden">
+                    <img
+                        src={imageUrl}
+                        alt="Report photo"
+                        className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+                </div>
+            )}
+
             <div className="p-4 space-y-3">
                 <div className="flex justify-between items-start">
                     <div className="flex items-center gap-3">
@@ -197,7 +212,7 @@ export function IncidentCard({
                 )}
 
                 <div className="text-xs text-muted-foreground">
-                    Posted {time} • Verified by {verifiedCount} neighbors
+                    Posted {time}{isEdited && <span className="italic text-muted-foreground/70"> (edited)</span>} • Verified by {verifiedCount} neighbors
                 </div>
 
                 {isEditing && (

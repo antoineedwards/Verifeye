@@ -22,6 +22,7 @@ export type Report = {
     is_verified: boolean
     image_url: string | null
     category: string | null
+    is_edited: boolean
 }
 
 export async function createReport(data: {
@@ -153,7 +154,7 @@ export async function updateReport(reportId: string, data: { title?: string, des
 
     const { error: updateError } = await supabase
         .from("reports")
-        .update(data)
+        .update({ ...data, is_edited: true })
         .eq("id", reportId)
 
     if (updateError) return { success: false, error: updateError.message }

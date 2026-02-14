@@ -3,10 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { motion } from "framer-motion";
-import { Image as ImageIcon } from "lucide-react";
+import { Image as ImageIcon, Loader2 } from "lucide-react";
+import { createCommunityPost } from "@/app/actions/community";
+import { toast } from "sonner";
 
 interface CreatePostProps {
-    onPost: (post: { title: string; content: string; type: string }) => void;
+    onPost: () => void;
     onCancel: () => void;
 }
 
@@ -14,8 +16,29 @@ export function CreatePost({ onPost, onCancel }: CreatePostProps) {
     const [title, setTitle] = useState("");
     const [content, setContent] = useState("");
     const [type, setType] = useState("General");
+    const [isPosting, setIsPosting] = useState(false);
 
     const types = ["Lost & Found", "Local Event", "Help/Request", "General"];
+
+    const handlePublish = async () => {
+        setIsPosting(true);
+        try {
+            const result = await createCommunityPost({ title, content, type });
+            if (result.success) {
+                toast.success("Posted to Community!", {
+                    description: "+10 Community Points earned",
+                    duration: 3000,
+                });
+                onPost();
+            } else {
+                toast.error(result.error || "Failed to publish post");
+            }
+        } catch {
+            toast.error("An error occurred");
+        } finally {
+            setIsPosting(false);
+        }
+    };
 
     return (
         <div className="flex flex-col h-full p-6 bg-background">
@@ -26,11 +49,11 @@ export function CreatePost({ onPost, onCancel }: CreatePostProps) {
                 <h2 className="font-semibold">New Post</h2>
                 <Button
                     variant="ghost"
-                    onClick={() => onPost({ title, content, type })}
-                    disabled={!title || !content}
+                    onClick={handlePublish}
+                    disabled={!title || !content || isPosting}
                     className="text-primary font-semibold -mr-4"
                 >
-                    Publish
+                    {isPosting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Publish"}
                 </Button>
             </div>
 
@@ -45,8 +68,8 @@ export function CreatePost({ onPost, onCancel }: CreatePostProps) {
                             key={t}
                             onClick={() => setType(t)}
                             className={`px-4 py-2 rounded-full text-sm whitespace-nowrap transition-colors ${type === t
-                                    ? "bg-[var(--community-primary)] text-white"
-                                    : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                                ? "bg-[var(--community-primary)] text-white"
+                                : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
                                 }`}
                         >
                             {t}
