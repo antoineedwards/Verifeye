@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { getUserProfile } from "@/app/actions/user";
+import { signOut } from "next-auth/react";
 
 import {
     Popover,
@@ -10,7 +11,7 @@ import {
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MapPin, Shield } from "lucide-react";
+import { MapPin, Shield, LogOut } from "lucide-react";
 
 export function ProfileMenu() {
     const [user, setUser] = useState<{
@@ -82,6 +83,14 @@ export function ProfileMenu() {
                             </div>
                         </div>
                     </div>
+                    <Button
+                        variant="ghost"
+                        className="w-full justify-start gap-2 text-muted-foreground hover:text-destructive mt-2"
+                        onClick={() => signOut({ redirectTo: "/" })}
+                    >
+                        <LogOut className="h-4 w-4" />
+                        Log Out
+                    </Button>
                 </div>
             </PopoverContent>
         </Popover>

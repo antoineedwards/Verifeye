@@ -1,6 +1,6 @@
 "use client";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Phone, FileText, ShieldAlert, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 

@@ -44,6 +44,13 @@ export async function getUserProfile() {
 }
 
 export async function awardPoints(userId: string, amount: number) {
+    // Verify the caller is authenticated and matches the target user
+    const session = await auth()
+    if (!session?.user?.id || session.user.id !== userId) {
+        console.error("Unauthorized awardPoints call")
+        return { success: false }
+    }
+
     // Fetch current points
     const { data: user, error: fetchError } = await supabase
         .schema("next_auth")

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     ArrowLeft,
@@ -176,10 +177,12 @@ export function ReportDetail({ reportId, onBack }: ReportDetailProps) {
                 {/* Image */}
                 {report.image_url && (
                     <div className="relative w-full aspect-video bg-muted overflow-hidden">
-                        <img
+                        <Image
                             src={report.image_url}
                             alt={report.title || "Report image"}
-                            className="w-full h-full object-cover"
+                            fill
+                            className="object-cover"
+                            sizes="(max-width: 768px) 100vw, 50vw"
                         />
                     </div>
                 )}
@@ -226,7 +229,7 @@ export function ReportDetail({ reportId, onBack }: ReportDetailProps) {
                         </div>
                         <div className="flex items-center gap-2">
                             <Shield className="h-4 w-4 shrink-0" />
-                            <span>Verified by {report.report_count} neighbor{report.report_count !== 1 ? "s" : ""}</span>
+                            <span>Verified by {report.report_count || 0} neighbor{(report.report_count || 0) !== 1 ? "s" : ""}</span>
                         </div>
                     </div>
 

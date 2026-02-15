@@ -1,23 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { OnboardingFlow } from "@/components/features/onboarding/OnboardingFlow";
 import { IncidentReportingFlow } from "@/components/features/safety/IncidentReportingFlow";
 import { useRouter } from "next/navigation";
 
+interface SessionUser {
+    address?: string;
+}
+
 export default function OnboardingPage() {
     const { data: session, status } = useSession();
     const router = useRouter();
-    // If the user already has an address, they are considered "verified" (or at least onboarded enough to skip geofence)
-    const [isVerified, setIsVerified] = useState(() => {
-        return !!(session?.user as any)?.address;
-    });
+    const [manuallyVerified, setManuallyVerified] = useState(false);
 
-    // Update isVerified if session loads later
-    if (status === "authenticated" && !isVerified && (session?.user as any)?.address) {
-        setIsVerified(true);
-    }
+    const isVerified = useMemo(() => {
+        if (manuallyVerified) return true;
+        return !!(session?.user as SessionUser)?.address;
+    }, [session, manuallyVerified]);
 
     // Redirect to home if not authenticated
     if (status === "unauthenticated") {
@@ -34,7 +35,7 @@ export default function OnboardingPage() {
             <main className="min-h-screen bg-background">
                 <div className="h-screen w-full max-w-md mx-auto bg-background overflow-hidden relative shadow-xl">
                     <OnboardingFlow
-                        onComplete={() => setIsVerified(true)}
+                        onComplete={() => setManuallyVerified(true)}
                         initialStep="geofence"
                     />
                 </div>

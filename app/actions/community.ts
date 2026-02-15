@@ -88,6 +88,7 @@ export async function getCommunityPosts(): Promise<CommunityPost[]> {
         .from("community_posts")
         .select("*")
         .order("created_at", { ascending: false })
+        .limit(50)
 
     if (error || !posts) {
         console.error("Error fetching community posts:", error)
@@ -167,32 +168,17 @@ export async function getCommunityPostById(postId: string): Promise<CommunityPos
 
     if (error || !post) return null
 
-    // Author name
-    let authorName = "Neighbor"
-    const { data: user } = await supabase
-        .schema("next_auth")
-        .from("users")
-        .select("name")
-        .eq("id", post.user_id)
-        .single()
-    if (user?.name) authorName = user.name
+    // Parallel queries for author, likes, and comments
+    const [userResult, likesResult, commentsResult] = await Promise.all([
+        supabase.schema("next_auth").from("users").select("name").eq("id", post.user_id).single(),
+        supabase.from("community_post_likes").select("user_id").eq("post_id", postId),
+        supabase.from("community_comments").select("id").eq("post_id", postId),
+    ])
 
-    // Like count + liked by me
-    const { data: likes } = await supabase
-        .from("community_post_likes")
-        .select("user_id")
-        .eq("post_id", postId)
-
-    const likeCount = likes?.length || 0
-    const likedByMe = !!likes?.some(l => l.user_id === currentUserId)
-
-    // Comment count
-    const { data: comments } = await supabase
-        .from("community_comments")
-        .select("id")
-        .eq("post_id", postId)
-
-    const commentCount = comments?.length || 0
+    const authorName = userResult.data?.name || "Neighbor"
+    const likeCount = likesResult.data?.length || 0
+    const likedByMe = !!likesResult.data?.some(l => l.user_id === currentUserId)
+    const commentCount = commentsResult.data?.length || 0
 
     return {
         id: post.id,

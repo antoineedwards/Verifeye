@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     ArrowLeft,
@@ -179,10 +180,12 @@ export function CommunityPostDetail({ postId, currentUserId, onBack, onDelete }:
                 {/* Image */}
                 {post.image_url && (
                     <div className="relative w-full aspect-video bg-muted overflow-hidden">
-                        <img
+                        <Image
                             src={post.image_url}
                             alt={post.title || "Post image"}
-                            className="w-full h-full object-cover"
+                            fill
+                            className="object-cover"
+                            sizes="(max-width: 768px) 100vw, 50vw"
                         />
                     </div>
                 )}

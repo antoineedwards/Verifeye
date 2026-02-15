@@ -25,6 +25,17 @@ export type Report = {
     is_edited: boolean
 }
 
+// Helper: count confirm votes for a report
+async function getConfirmVoteCount(reportId: string): Promise<number> {
+    const { data, error } = await supabase
+        .from("report_votes")
+        .select("id")
+        .eq("report_id", reportId)
+        .eq("vote_type", "confirm")
+    if (error || !data) return 0
+    return data.length
+}
+
 export async function createReport(data: {
     title: string
     description: string
@@ -60,20 +71,39 @@ export async function createReport(data: {
 }
 
 export async function getReports() {
-    // We don't need auth to view reports based on the policy "Reports are viewable by everyone"
-    // But usually we might want to know who is viewing to show "my report" status etc.
-
     const { data, error } = await supabase
         .from("reports")
         .select("*")
         .order("created_at", { ascending: false })
+        .limit(50)
 
     if (error) {
         console.error("Error fetching reports:", error)
         return []
     }
 
-    return data as Report[]
+    const reports = data || []
+    if (reports.length === 0) return []
+
+    // Single batch query for all vote counts (avoids N+1)
+    const reportIds = reports.map(r => r.id)
+    const { data: votes } = await supabase
+        .from("report_votes")
+        .select("report_id")
+        .in("report_id", reportIds)
+        .eq("vote_type", "confirm")
+
+    const voteCounts: Record<string, number> = {}
+    if (votes) {
+        for (const v of votes) {
+            voteCounts[v.report_id] = (voteCounts[v.report_id] || 0) + 1
+        }
+    }
+
+    return reports.map(r => ({
+        ...r,
+        report_count: voteCounts[r.id] || 0,
+    })) as Report[]
 }
 
 export async function voteOnReport(reportId: string, voteType: 'confirm' | 'dispute') {
@@ -98,27 +128,18 @@ export async function voteOnReport(reportId: string, voteType: 'confirm' | 'disp
         return { success: false, error: voteError.message }
     }
 
-    // If confirm, increment verification count on the report
+    // If confirm, check if the report should be marked as verified
     if (voteType === 'confirm') {
-        const { data: currentReport, error: fetchError } = await supabase
-            .from("reports")
-            .select("report_count, is_verified, status")
-            .eq("id", reportId)
-            .single();
-
-        if (!fetchError && currentReport) {
-            const newCount = (currentReport.report_count || 0) + 1;
-            const isVerified = newCount >= 3;
-            const newStatus = isVerified && currentReport.status === 'unverified' ? 'verified' : currentReport.status;
-
+        const confirmCount = await getConfirmVoteCount(reportId)
+        if (confirmCount >= 3) {
             await supabase
                 .from("reports")
                 .update({
-                    report_count: newCount,
-                    is_verified: isVerified,
-                    status: newStatus
+                    is_verified: true,
+                    status: 'verified'
                 })
-                .eq("id", reportId);
+                .eq("id", reportId)
+                .eq("status", "unverified")
         }
     }
 
@@ -232,35 +253,22 @@ export async function getReportById(reportId: string): Promise<ReportDetail | nu
 
     if (error || !report) return null
 
-    // Author name
-    let authorName = "Neighbor"
-    const { data: user } = await supabase
-        .schema("next_auth")
-        .from("users")
-        .select("name")
-        .eq("id", report.user_id)
-        .single()
-    if (user?.name) authorName = user.name
+    // Parallel queries for author, likes, comments, and vote count
+    const [userResult, likesResult, commentsResult, reportCount] = await Promise.all([
+        supabase.schema("next_auth").from("users").select("name").eq("id", report.user_id).single(),
+        supabase.from("report_likes").select("user_id").eq("report_id", reportId),
+        supabase.from("report_comments").select("id").eq("report_id", reportId),
+        getConfirmVoteCount(reportId),
+    ])
 
-    // Like count + liked by me
-    const { data: likes } = await supabase
-        .from("report_likes")
-        .select("user_id")
-        .eq("report_id", reportId)
-
-    const likeCount = likes?.length || 0
-    const likedByMe = !!likes?.some(l => l.user_id === currentUserId)
-
-    // Comment count
-    const { data: comments } = await supabase
-        .from("report_comments")
-        .select("id")
-        .eq("report_id", reportId)
-
-    const commentCount = comments?.length || 0
+    const authorName = userResult.data?.name || "Neighbor"
+    const likeCount = likesResult.data?.length || 0
+    const likedByMe = !!likesResult.data?.some(l => l.user_id === currentUserId)
+    const commentCount = commentsResult.data?.length || 0
 
     return {
         ...(report as Report),
+        report_count: reportCount,
         author_name: authorName,
         like_count: likeCount,
         comment_count: commentCount,

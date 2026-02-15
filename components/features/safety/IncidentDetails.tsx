@@ -4,6 +4,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
 import { Camera, Mic, Image as ImageIcon, X } from "lucide-react";
+import Image from "next/image";
 
 interface IncidentDetailsProps {
     onPost: (details: { title: string; description: string; image?: File }) => void;
@@ -127,10 +128,13 @@ export function IncidentDetails({ onPost, onBack }: IncidentDetailsProps) {
                                 exit={{ opacity: 0, scale: 0.95 }}
                                 className="relative rounded-xl overflow-hidden border border-border"
                             >
-                                <img
+                                <Image
                                     src={imagePreview}
                                     alt="Selected photo"
+                                    width={400}
+                                    height={192}
                                     className="w-full h-48 object-cover"
+                                    unoptimized
                                 />
                                 <button
                                     onClick={removeImage}

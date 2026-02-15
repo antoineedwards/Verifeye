@@ -13,6 +13,10 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+interface SessionUser {
+  address?: string;
+}
+
 export async function verifyUserDocument(formData: FormData) {
   // 1. Get Session & User Data
   const session = await auth();
@@ -20,8 +24,7 @@ export async function verifyUserDocument(formData: FormData) {
 
   // 2. Dynamic Data Extraction (No more hardcoding)
   const targetName = session.user.name;
-  // We cast to 'any' because 'address' isn't in the default NextAuth type definition
-  const targetAddress = (session.user as any).address;
+  const targetAddress = (session.user as SessionUser).address;
 
   if (!targetName || !targetAddress) {
     return { error: "User profile is missing name or address. Cannot verify." };
@@ -48,8 +51,8 @@ export async function verifyUserDocument(formData: FormData) {
         {
           role: "user",
           content: [
-            { 
-              type: "text", 
+            {
+              type: "text",
               text: `
               Verify if the document in this image matches the following user:
               
@@ -67,7 +70,7 @@ export async function verifyUserDocument(formData: FormData) {
                 "isMatch": boolean,
                 "confidence": number (0-100),
                 "reasoning": "Brief explanation of why it matched or failed"
-              }` 
+              }`
             },
             { type: "image_url", image_url: { url: dataUrl } },
           ],

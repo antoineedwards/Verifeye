@@ -3,13 +3,14 @@
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { GoogleSignIn } from "@/components/auth/google-signin";
-import { useRouter } from "next/navigation"; // Import the router
+import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 interface WelcomeScreenProps {
     onNext: () => void;
 }
 
-export function WelcomeScreen({ onNext }: WelcomeScreenProps) {
+export function WelcomeScreen({ onNext: _onNext }: WelcomeScreenProps) {
     const router = useRouter();
 
     const handleEmailSignUp = () => {
@@ -27,7 +28,7 @@ export function WelcomeScreen({ onNext }: WelcomeScreenProps) {
                 className="space-y-4"
             >
                 <div className="flex justify-center mb-4">
-                    <img src="/logo.png" alt="Verifeye Logo" className="w-50 h-50 object-contain" />
+                    <Image src="/logo.png" alt="Verifeye Logo" width={200} height={200} className="object-contain" priority />
                 </div>
                 <p className="text-lg text-muted-foreground">
                     Connect with your verified neighbors. Build a safer community together.
@@ -45,9 +46,9 @@ export function WelcomeScreen({ onNext }: WelcomeScreenProps) {
                     <Button onClick={handleEmailSignUp} className="w-full h-12 text-lg font-medium">
                         Sign Up with Email
                     </Button>
-                    
-                    <GoogleSignIn/>
-                    
+
+                    <GoogleSignIn />
+
                     <Button variant="ghost" className="w-full text-sm text-muted-foreground">
                         Already have an account? Log in
                     </Button>

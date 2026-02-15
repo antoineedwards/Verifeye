@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { HomeTab } from "./HomeTab";
 import { IncidentTypeSelection } from "./IncidentTypeSelection";
 import { LocationConfirmation } from "./LocationConfirmation";

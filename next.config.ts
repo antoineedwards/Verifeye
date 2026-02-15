@@ -14,8 +14,9 @@ const nextConfig: NextConfig = {
   experimental: {
     serverActions: {
       allowedOrigins: [
-        'zany-happiness-699vj9g97x76cx45j-3000.app.github.dev', // Copy this from your error message
-        'localhost:3000'
+        'localhost:3000',
+        // Add your production domain here before deploying, e.g.:
+        // 'verifeye.vercel.app',
       ],
     },
   },

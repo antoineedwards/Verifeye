@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { MapPin, CheckCircle2, XCircle, AlertTriangle, Trash2, Edit2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import Image from "next/image";
 
 interface IncidentCardProps {
     id: string;
@@ -42,7 +43,7 @@ export function IncidentCard({
     onClick,
     onDelete
 }: IncidentCardProps) {
-    const [status, setStatus] = useState(initialStatus);
+    const [status] = useState(initialStatus);
     const [verifiedCount, setVerifiedCount] = useState(initialCount);
     const [hasVoted, setHasVoted] = useState(!!userVote);
 
@@ -155,7 +156,7 @@ export function IncidentCard({
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             className={`bg-card border rounded-xl overflow-hidden shadow-sm ${styles.bg} ${styles.border} relative group ${onClick ? 'cursor-pointer' : ''}`}
-            onClick={(e) => {
+            onClick={() => {
                 if (isEditing) return;
                 onClick?.();
             }}
@@ -173,10 +174,12 @@ export function IncidentCard({
 
             {imageUrl && (
                 <div className="relative w-full h-40 overflow-hidden">
-                    <img
+                    <Image
                         src={imageUrl}
                         alt="Report photo"
-                        className="w-full h-full object-cover"
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 768px) 100vw, 50vw"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
                 </div>
