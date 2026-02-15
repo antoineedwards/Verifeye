@@ -17,6 +17,7 @@ import { getUserProfile } from "@/app/actions/user";
 
 interface CommunityTabProps {
     onCreatePost: () => void;
+    onPostSelect?: (postId: string) => void;
 }
 
 const TYPE_LABELS: Record<string, string> = {
@@ -27,7 +28,7 @@ const TYPE_LABELS: Record<string, string> = {
     alert: "Alert",
 };
 
-export function CommunityTab({ onCreatePost }: CommunityTabProps) {
+export function CommunityTab({ onCreatePost, onPostSelect }: CommunityTabProps) {
     const [posts, setPosts] = useState<CommunityPost[]>([]);
     const [loading, setLoading] = useState(true);
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -161,7 +162,8 @@ export function CommunityTab({ onCreatePost }: CommunityTabProps) {
                                 key={post.id}
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className={`bg-card border rounded-xl p-4 shadow-sm relative overflow-hidden ${isEvent ? "border-violet-200 bg-violet-50/30" : "border-border"}`}
+                                className={`bg-card border rounded-xl p-4 shadow-sm relative overflow-hidden ${isEvent ? "border-violet-200 bg-violet-50/30" : "border-border"} ${onPostSelect ? 'cursor-pointer' : ''}`}
+                                onClick={() => onPostSelect?.(post.id)}
                             >
                                 {isEvent && (
                                     <div className="absolute top-0 right-0 w-24 h-24 bg-violet-500/5 rounded-bl-full -mr-4 -mt-4 pointer-events-none" />
@@ -177,7 +179,7 @@ export function CommunityTab({ onCreatePost }: CommunityTabProps) {
                                         </span>
                                         <h3 className="font-semibold text-lg leading-tight">{post.title}</h3>
                                     </div>
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                                         <span className="text-xs font-medium text-muted-foreground bg-background/50 px-2 py-1 rounded-md border">{formatTime(post.created_at)}</span>
                                         {isOwner && (
                                             <button
@@ -199,12 +201,12 @@ export function CommunityTab({ onCreatePost }: CommunityTabProps) {
                                         </div>
                                         <span className="text-xs text-muted-foreground font-medium">{post.author_name || "Neighbor"}</span>
                                     </div>
-                                    <div className="flex gap-3">
+                                    <div className="flex gap-3" onClick={(e) => e.stopPropagation()}>
                                         <button
                                             onClick={() => handleLike(post.id)}
                                             className={`flex items-center gap-1.5 text-xs font-medium transition-colors px-2 py-1 rounded-md ${post.liked_by_me
-                                                    ? "text-pink-500 bg-pink-50"
-                                                    : "text-muted-foreground hover:text-pink-500 bg-secondary/50 hover:bg-pink-50"
+                                                ? "text-pink-500 bg-pink-50"
+                                                : "text-muted-foreground hover:text-pink-500 bg-secondary/50 hover:bg-pink-50"
                                                 }`}
                                         >
                                             <Heart className={`h-3.5 w-3.5 ${post.liked_by_me ? "fill-current" : ""}`} /> {post.like_count}
@@ -212,8 +214,8 @@ export function CommunityTab({ onCreatePost }: CommunityTabProps) {
                                         <button
                                             onClick={() => handleToggleComments(post.id)}
                                             className={`flex items-center gap-1.5 text-xs font-medium transition-colors px-2 py-1 rounded-md ${expandedComments === post.id
-                                                    ? "text-blue-500 bg-blue-50"
-                                                    : "text-muted-foreground hover:text-blue-500 bg-secondary/50 hover:bg-blue-50"
+                                                ? "text-blue-500 bg-blue-50"
+                                                : "text-muted-foreground hover:text-blue-500 bg-secondary/50 hover:bg-blue-50"
                                                 }`}
                                         >
                                             <MessageSquare className="h-3.5 w-3.5" /> {post.comment_count}

@@ -7,7 +7,9 @@ import { LocationConfirmation } from "./LocationConfirmation";
 import { IncidentDetails } from "./IncidentDetails";
 import { CommunityTab } from "@/components/features/community/CommunityTab";
 import { CreatePost } from "@/components/features/community/CreatePost";
+import { CommunityPostDetail } from "@/components/features/community/CommunityPostDetail";
 import { ResourcesTab } from "@/components/features/resources/ResourcesTab";
+import { ReportDetail } from "@/components/features/safety/ReportDetail";
 import { BottomNav } from "@/components/ui/bottom-nav";
 import { AppHeader } from "@/components/ui/app-header";
 import { AnimatePresence, motion } from "framer-motion";
@@ -15,12 +17,14 @@ import { toast } from "sonner";
 
 import { createReport } from "@/app/actions/reports";
 
-type ReportingStep = "home" | "type-selection" | "location" | "details" | "community" | "create-post" | "resources";
+type ReportingStep = "home" | "type-selection" | "location" | "details" | "community" | "create-post" | "resources" | "report-detail" | "post-detail";
 
 export function IncidentReportingFlow() {
     const [step, setStep] = useState<ReportingStep>("home");
     const [activeTab, setActiveTab] = useState<"home" | "community" | "resources">("home");
     const [isPosting, setIsPosting] = useState(false);
+    const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
+    const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
     const [incidentData, setIncidentData] = useState<{
         type?: string;
         location?: string;
@@ -131,7 +135,13 @@ export function IncidentReportingFlow() {
                             exit={{ opacity: 0 }}
                             className="h-full"
                         >
-                            <HomeTab onReport={() => setStep("type-selection")} />
+                            <HomeTab
+                                onReport={() => setStep("type-selection")}
+                                onReportSelect={(id) => {
+                                    setSelectedReportId(id);
+                                    setStep("report-detail");
+                                }}
+                            />
                         </motion.div>
                     )}
 
@@ -143,7 +153,13 @@ export function IncidentReportingFlow() {
                             exit={{ opacity: 0 }}
                             className="h-full"
                         >
-                            <CommunityTab onCreatePost={() => setStep("create-post")} />
+                            <CommunityTab
+                                onCreatePost={() => setStep("create-post")}
+                                onPostSelect={(id) => {
+                                    setSelectedPostId(id);
+                                    setStep("post-detail");
+                                }}
+                            />
                         </motion.div>
                     )}
 
@@ -215,6 +231,44 @@ export function IncidentReportingFlow() {
                             <CreatePost
                                 onPost={handleCommunityPost}
                                 onCancel={() => setStep("community")}
+                            />
+                        </motion.div>
+                    )}
+
+                    {step === "report-detail" && selectedReportId && (
+                        <motion.div
+                            key="report-detail"
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -20 }}
+                            className="h-full absolute inset-0 z-50 bg-background"
+                        >
+                            <ReportDetail
+                                reportId={selectedReportId}
+                                onBack={() => {
+                                    setSelectedReportId(null);
+                                    setStep("home");
+                                    setActiveTab("home");
+                                }}
+                            />
+                        </motion.div>
+                    )}
+
+                    {step === "post-detail" && selectedPostId && (
+                        <motion.div
+                            key="post-detail"
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -20 }}
+                            className="h-full absolute inset-0 z-50 bg-background"
+                        >
+                            <CommunityPostDetail
+                                postId={selectedPostId}
+                                onBack={() => {
+                                    setSelectedPostId(null);
+                                    setStep("community");
+                                    setActiveTab("community");
+                                }}
                             />
                         </motion.div>
                     )}

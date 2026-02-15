@@ -155,6 +155,63 @@ export async function getCommunityPosts(): Promise<CommunityPost[]> {
     }))
 }
 
+export async function getCommunityPostById(postId: string): Promise<CommunityPost | null> {
+    const session = await auth()
+    const currentUserId = session?.user?.id || null
+
+    const { data: post, error } = await supabase
+        .from("community_posts")
+        .select("*")
+        .eq("id", postId)
+        .single()
+
+    if (error || !post) return null
+
+    // Author name
+    let authorName = "Neighbor"
+    const { data: user } = await supabase
+        .schema("next_auth")
+        .from("users")
+        .select("name")
+        .eq("id", post.user_id)
+        .single()
+    if (user?.name) authorName = user.name
+
+    // Like count + liked by me
+    const { data: likes } = await supabase
+        .from("community_post_likes")
+        .select("user_id")
+        .eq("post_id", postId)
+
+    const likeCount = likes?.length || 0
+    const likedByMe = !!likes?.some(l => l.user_id === currentUserId)
+
+    // Comment count
+    const { data: comments } = await supabase
+        .from("community_comments")
+        .select("id")
+        .eq("post_id", postId)
+
+    const commentCount = comments?.length || 0
+
+    return {
+        id: post.id,
+        created_at: post.created_at,
+        user_id: post.user_id,
+        type: post.type,
+        title: post.title,
+        content: post.content,
+        image_url: post.image_url,
+        location_name: post.location_name,
+        latitude: post.latitude,
+        longitude: post.longitude,
+        author_name: authorName,
+        like_count: likeCount,
+        comment_count: commentCount,
+        liked_by_me: likedByMe,
+    }
+}
+
 export async function deleteCommunityPost(postId: string) {
     const session = await auth()
     if (!session?.user?.id) return { success: false, error: "Unauthorized" }

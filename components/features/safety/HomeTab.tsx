@@ -1,25 +1,29 @@
 import { useState, useEffect } from "react";
 import { ReportFAB } from "./ReportFAB";
 import { IncidentCard } from "./IncidentCard";
-import { getReports, Report } from "@/app/actions/reports";
+import { getReports, getUserVotes, Report } from "@/app/actions/reports";
 import { getUserProfile } from "@/app/actions/user";
 
 interface HomeTabProps {
     onReport: () => void;
+    onReportSelect?: (reportId: string) => void;
 }
 
-export function HomeTab({ onReport }: HomeTabProps) {
+export function HomeTab({ onReport, onReportSelect }: HomeTabProps) {
     const [reports, setReports] = useState<Report[]>([]);
     const [loading, setLoading] = useState(true);
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+    const [userVotes, setUserVotes] = useState<Record<string, 'confirm' | 'dispute'>>({});
 
     useEffect(() => {
         const fetchData = async () => {
-            const [reportsData, userData] = await Promise.all([
+            const [reportsData, userData, votesData] = await Promise.all([
                 getReports(),
-                getUserProfile()
+                getUserProfile(),
+                getUserVotes()
             ]);
             setReports(reportsData);
+            setUserVotes(votesData);
             if (userData) {
                 setCurrentUserId(userData.id);
             }
@@ -63,11 +67,13 @@ export function HomeTab({ onReport }: HomeTabProps) {
                             location={report.location_address}
                             time={formatTime(report.created_at)}
                             status={report.status === 'resolved' ? "Resolved" : (report.status === 'verified' ? "Verified" : "Unverified")}
-                            verifiedCount={report.verification_count}
+                            verifiedCount={report.report_count}
                             reportUserId={report.user_id}
                             currentUserId={currentUserId}
                             imageUrl={report.image_url}
                             isEdited={report.is_edited}
+                            userVote={userVotes[report.id] || null}
+                            onClick={() => onReportSelect?.(report.id)}
                             onDelete={handleDelete}
                         />
                     ))

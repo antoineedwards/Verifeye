@@ -35,10 +35,42 @@ export async function getUserProfile() {
     const { data: user, error } = await supabase
         .schema("next_auth")
         .from("users")
-        .select("id, name, email, image, address, level")
+        .select("id, name, email, image, address, level, points")
         .eq("id", session.user.id)
         .single()
 
     if (error || !user) return null
     return user
+}
+
+export async function awardPoints(userId: string, amount: number) {
+    // Fetch current points
+    const { data: user, error: fetchError } = await supabase
+        .schema("next_auth")
+        .from("users")
+        .select("points")
+        .eq("id", userId)
+        .single()
+
+    if (fetchError || !user) {
+        console.error("Error fetching user for points:", fetchError)
+        return { success: false }
+    }
+
+    const currentPoints = (user.points as number) || 0
+    const newPoints = currentPoints + amount
+    const newLevel = Math.floor(newPoints / 50) + 1
+
+    const { error: updateError } = await supabase
+        .schema("next_auth")
+        .from("users")
+        .update({ points: newPoints, level: newLevel })
+        .eq("id", userId)
+
+    if (updateError) {
+        console.error("Error updating points:", updateError)
+        return { success: false }
+    }
+
+    return { success: true, points: newPoints, level: newLevel }
 }

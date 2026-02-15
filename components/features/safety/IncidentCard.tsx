@@ -1,4 +1,4 @@
-import { verifyReport, deleteReport, updateReport } from "@/app/actions/reports";
+import { voteOnReport, deleteReport, updateReport } from "@/app/actions/reports";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -20,6 +20,8 @@ interface IncidentCardProps {
     currentUserId?: string | null;
     imageUrl?: string | null;
     isEdited?: boolean;
+    userVote?: 'confirm' | 'dispute' | null;
+    onClick?: () => void;
     onDelete?: (id: string) => void;
 }
 
@@ -36,11 +38,13 @@ export function IncidentCard({
     currentUserId,
     imageUrl,
     isEdited,
+    userVote,
+    onClick,
     onDelete
 }: IncidentCardProps) {
     const [status, setStatus] = useState(initialStatus);
     const [verifiedCount, setVerifiedCount] = useState(initialCount);
-    const [hasVoted, setHasVoted] = useState(false);
+    const [hasVoted, setHasVoted] = useState(!!userVote);
 
     // Edit Mode State
     const [isEditing, setIsEditing] = useState(false);
@@ -57,28 +61,30 @@ export function IncidentCard({
         setHasVoted(true);
         setVerifiedCount(c => c + 1);
 
-        toast.promise(verifyReport(id), {
-            loading: "Verifying...",
-            success: (data) => {
-                if (data.success) {
-                    return "Verified! +50 Points. New Badge: Community Watch";
-                } else {
-                    // Rollback (simplified)
-                    setHasVoted(false);
-                    setVerifiedCount(c => c - 1);
-                    throw new Error(data.error);
-                }
-            },
-            error: "Failed to verify report"
-        });
+        const result = await voteOnReport(id, 'confirm');
+        if (result.success) {
+            toast.success(`Confirmed! +${result.pointsAwarded} Points`);
+        } else {
+            // Rollback
+            setHasVoted(false);
+            setVerifiedCount(c => c - 1);
+            toast.error(result.error || "Failed to verify report");
+        }
     };
 
-    const handleDispute = () => {
+    const handleDispute = async () => {
         if (hasVoted) return;
         setHasVoted(true);
-        toast("Feedback Recorded", {
-            description: "Thanks for keeping the map accurate.",
-        });
+
+        const result = await voteOnReport(id, 'dispute');
+        if (result.success) {
+            toast.success(`Feedback recorded! +${result.pointsAwarded} Points`, {
+                description: "Thanks for keeping the map accurate.",
+            });
+        } else {
+            setHasVoted(false);
+            toast.error(result.error || "Failed to record dispute");
+        }
     };
 
     const handleDelete = async () => {
@@ -148,14 +154,18 @@ export function IncidentCard({
         <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className={`bg-card border rounded-xl overflow-hidden shadow-sm ${styles.bg} ${styles.border} relative group`}
+            className={`bg-card border rounded-xl overflow-hidden shadow-sm ${styles.bg} ${styles.border} relative group ${onClick ? 'cursor-pointer' : ''}`}
+            onClick={(e) => {
+                if (isEditing) return;
+                onClick?.();
+            }}
         >
             {isOwner && !isEditing && (
-                <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button variant="ghost" size="icon" className="h-8 w-8 bg-white/50 hover:bg-white" onClick={() => setIsEditing(true)}>
+                <div className="absolute top-2 right-2 flex gap-1 z-10" onClick={(e) => e.stopPropagation()}>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 bg-white/70 hover:bg-white shadow-sm" onClick={() => setIsEditing(true)}>
                         <Edit2 className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 bg-white/50 hover:bg-white hover:text-red-600" onClick={handleDelete}>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 bg-white/70 hover:bg-white hover:text-red-600 shadow-sm" onClick={handleDelete}>
                         <Trash2 className="h-4 w-4" />
                     </Button>
                 </div>
@@ -224,7 +234,7 @@ export function IncidentCard({
             </div>
 
             {!hasVoted && status === "Unverified" && !isEditing && (
-                <div className="grid grid-cols-2 border-t divide-x">
+                <div className="grid grid-cols-2 border-t divide-x" onClick={(e) => e.stopPropagation()}>
                     <Button
                         variant="ghost"
                         className="rounded-none h-12 text-green-600 hover:text-green-700 hover:bg-green-50"
