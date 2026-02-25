@@ -17,6 +17,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.address = user.address;
         // @ts-expect-error -- custom Supabase user fields not in NextAuth types
         session.user.level = user.level;
+        // @ts-expect-error -- custom Supabase user fields not in NextAuth types
+        session.user.geofence_id = user.geofence_id;
       }
       return session;
     },

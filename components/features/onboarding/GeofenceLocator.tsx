@@ -1,10 +1,10 @@
 import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { motion } from "framer-motion";
-import { MapPin, Loader2 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { MapPin, Loader2, AlertCircle } from "lucide-react";
 import dynamic from "next/dynamic";
-import { saveUserAddress } from "@/app/actions/user";
+import { completeOnboarding } from "@/app/actions/onboarding";
 
 const US_STATES = [
     { value: "AL", label: "Alabama" },
@@ -73,6 +73,7 @@ export function GeofenceLocator({ onNext, onBack }: GeofenceLocatorProps) {
         zip: ""
     });
     const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     const [mapCenter, setMapCenter] = useState<[number, number]>([32.3668, -86.3000]);
 
     // Dynamically import the map component to avoid SSR issues
@@ -111,9 +112,42 @@ export function GeofenceLocator({ onNext, onBack }: GeofenceLocatorProps) {
 
     const handleChange = (field: string, value: string) => {
         setFormData(prev => ({ ...prev, [field]: value }));
+        // Clear error when user starts editing
+        if (error) setError(null);
     };
 
     const isFormValid = formData.line1 && formData.city && formData.state && formData.zip;
+
+    const handleSubmit = async () => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const { line1, line2, city, state, zip } = formData;
+            // Build the display address for storing
+            const fullAddress = `${line1}${line2 ? `, ${line2}` : ""}, ${city}, ${state} ${zip}`;
+
+            // Build FormData — pass individual fields for structured geocoding
+            const fd = new FormData();
+            fd.set("address", fullAddress);
+            fd.set("street", line1);
+            fd.set("city", city);
+            fd.set("state", state);
+            fd.set("zip", zip);
+
+            const result = await completeOnboarding(fd);
+
+            // If we get a result back, it means there was an error
+            // (success triggers a redirect from the server action)
+            if (result?.error) {
+                setError(result.error);
+            }
+        } catch (err) {
+            console.error("Error during onboarding:", err);
+            setError("Something went wrong. Please try again.");
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     return (
         <div className="flex flex-col h-full p-6 bg-background">
@@ -179,6 +213,21 @@ export function GeofenceLocator({ onNext, onBack }: GeofenceLocatorProps) {
                         />
                     </div>
 
+                    {/* Error Message */}
+                    <AnimatePresence>
+                        {error && (
+                            <motion.div
+                                initial={{ opacity: 0, y: -8 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -8 }}
+                                className="flex items-start gap-3 p-3 rounded-lg bg-destructive/10 border border-destructive/20"
+                            >
+                                <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+                                <p className="text-sm text-destructive">{error}</p>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+
                     <div className="flex-1 min-h-[200px] mt-4 bg-muted rounded-md overflow-hidden border shadow-inner relative">
                         {isLoading && (
                             <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/50 backdrop-blur-sm">
@@ -192,27 +241,9 @@ export function GeofenceLocator({ onNext, onBack }: GeofenceLocatorProps) {
                 <Button
                     disabled={!isFormValid || isLoading}
                     className="w-full h-12 text-lg mt-4"
-                    onClick={async () => {
-                        setIsLoading(true);
-                        try {
-                            // Combine address for DB storage
-                            const { line1, line2, city, state, zip } = formData;
-                            const fullAddress = `${line1}${line2 ? `, ${line2}` : ""}, ${city}, ${state} ${zip}`;
-
-                            const result = await saveUserAddress(fullAddress);
-                            if (result.success) {
-                                onNext();
-                            } else {
-                                console.error("Failed to save address");
-                            }
-                        } catch (error) {
-                            console.error("Error saving address:", error);
-                        } finally {
-                            setIsLoading(false);
-                        }
-                    }}
+                    onClick={handleSubmit}
                 >
-                    {isLoading ? "Saving..." : "Continue"}
+                    {isLoading ? "Locating neighborhood..." : "Continue"}
                 </Button>
             </motion.div>
         </div>

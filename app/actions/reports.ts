@@ -23,6 +23,7 @@ export type Report = {
     image_url: string | null
     category: string | null
     is_edited: boolean
+    geofence_id: string | null
 }
 
 // Helper: count confirm votes for a report
@@ -48,6 +49,14 @@ export async function createReport(data: {
     const session = await auth()
     if (!session?.user?.id) throw new Error("Unauthorized")
 
+    // Look up the user's geofence_id so the report is scoped to their neighborhood
+    const { data: userData } = await supabase
+        .schema("next_auth")
+        .from("users")
+        .select("geofence_id")
+        .eq("id", session.user.id)
+        .single()
+
     const { error } = await supabase
         .from("reports")
         .insert({
@@ -59,7 +68,8 @@ export async function createReport(data: {
             longitude: data.longitude,
             category: data.category,
             image_url: data.image_url,
-            status: 'unverified'
+            status: 'unverified',
+            geofence_id: userData?.geofence_id || null,
         })
 
     if (error) {
@@ -71,11 +81,32 @@ export async function createReport(data: {
 }
 
 export async function getReports() {
-    const { data, error } = await supabase
+    const session = await auth()
+
+    // Get the user's geofence_id to scope reports to their neighborhood
+    let userGeofenceId: string | null = null
+    if (session?.user?.id) {
+        const { data: userData } = await supabase
+            .schema("next_auth")
+            .from("users")
+            .select("geofence_id")
+            .eq("id", session.user.id)
+            .single()
+        userGeofenceId = userData?.geofence_id || null
+    }
+
+    // Build the query — filter by geofence if the user has one
+    let query = supabase
         .from("reports")
         .select("*")
         .order("created_at", { ascending: false })
         .limit(50)
+
+    if (userGeofenceId) {
+        query = query.eq("geofence_id", userGeofenceId)
+    }
+
+    const { data, error } = await query
 
     if (error) {
         console.error("Error fetching reports:", error)

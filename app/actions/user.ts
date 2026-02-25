@@ -35,12 +35,37 @@ export async function getUserProfile() {
     const { data: user, error } = await supabase
         .schema("next_auth")
         .from("users")
-        .select("id, name, email, image, address, level, points")
+        .select("id, name, email, image, address, level, points, geofence_id")
         .eq("id", session.user.id)
         .single()
 
     if (error || !user) return null
     return user
+}
+
+export async function getUserGeofenceName(): Promise<string | null> {
+    const session = await auth()
+    if (!session?.user?.id) return null
+
+    // 1. Get the user's geofence_id
+    const { data: user, error: userError } = await supabase
+        .schema("next_auth")
+        .from("users")
+        .select("geofence_id")
+        .eq("id", session.user.id)
+        .single()
+
+    if (userError || !user?.geofence_id) return null
+
+    // 2. Look up the geofence name
+    const { data: geofence, error: geoError } = await supabase
+        .from("geofences")
+        .select("name")
+        .eq("id", user.geofence_id)
+        .single()
+
+    if (geoError || !geofence) return null
+    return geofence.name
 }
 
 export async function awardPoints(userId: string, amount: number) {
