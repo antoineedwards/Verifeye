@@ -13,18 +13,26 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-interface SessionUser {
-  address?: string;
-}
-
 export async function verifyUserDocument(formData: FormData) {
-  // 1. Get Session & User Data
+  // 1. Get Session
   const session = await auth();
   if (!session?.user?.id) return { error: "Not authenticated" };
 
-  // 2. Dynamic Data Extraction (No more hardcoding)
-  const targetName = session.user.name;
-  const targetAddress = (session.user as SessionUser).address;
+  // 2. Pull target name & address from Supabase (single source of truth)
+  const { data: userProfile, error: profileError } = await supabase
+    .schema("next_auth")
+    .from("users")
+    .select("name, address")
+    .eq("id", session.user.id)
+    .single();
+
+  if (profileError || !userProfile) {
+    console.error("Supabase Profile Fetch Error:", profileError);
+    return { error: "Could not retrieve your profile. Please try again." };
+  }
+
+  const targetName = userProfile.name;
+  const targetAddress = userProfile.address;
 
   if (!targetName || !targetAddress) {
     return { error: "User profile is missing name or address. Cannot verify." };
@@ -40,13 +48,19 @@ export async function verifyUserDocument(formData: FormData) {
     const base64Image = buffer.toString('base64');
     const dataUrl = `data:${file.type};base64,${base64Image}`;
 
-    // 4. Send to OpenAI (Dynamic Prompt)
+    // 4. Send to OpenAI Vision (Address Verification Agent)
     const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "gpt-4o", // Standard gpt-4o for Vision tasks; much better at small text like 'RM 304C'
       messages: [
         {
           role: "system",
-          content: "You are a document verification expert. Your job is to semantically match a document to a user profile, allowing for normal variations."
+          content: `You are a specialized Address Verification Agent. 
+      Your goal is to determine if a physical document (utility bill, ID, etc.) matches a digital profile.
+      
+      CRITICAL HIERARCHY:
+      1. Primary Match: Street Number + Street Name must match exactly (ignoring abbreviations).
+      2. Secondary Match: Name must be a variation of the same person.
+      3. Disregard: Address Line 2 (Unit, Apt, Room, Suite) is OPTIONAL. If the primary street match is perfect, a mismatch or absence of Line 2 is still a VALID MATCH.`
         },
         {
           role: "user",
@@ -54,23 +68,23 @@ export async function verifyUserDocument(formData: FormData) {
             {
               type: "text",
               text: `
-              Verify if the document in this image matches the following user:
-              
-              Target Name: "${targetName}"
-              Target Address: "${targetAddress}"
+          --- TARGET PROFILE ---
+          Name: "${targetName}"
+          Address: "${targetAddress}"
 
-              Rules for Matching:
-              - Ignore case (e.g., 'a.j.' matches 'ANTOINE J').
-              - Ignore middle initials vs. full names.
-              - Ignore specific unit numbers (like RM 304C) if the street number and name match.
-              - Abbreviations like 'ST' for 'Street' or 'AL' for 'Alabama' are a match.
-              
-              Return JSON ONLY with this structure:
-              {
-                "isMatch": boolean,
-                "confidence": number (0-100),
-                "reasoning": "Brief explanation of why it matched or failed"
-              }`
+          --- INSTRUCTIONS ---
+          1. Extract the name and full address from the image.
+          2. Normalize the extracted data (e.g., 'Avenue' -> 'AVE', 'Antoine' -> 'ANTOINE').
+          3. Compare the 'Primary Address' (House Number + Street).
+          4. If Primary matches, but Address Line 2 (like 'RM 304C' or 'Apt 4') is missing or different, MARK AS MATCH.
+
+          Return JSON ONLY:
+          {
+            "extracted": { "name": string, "address": string },
+            "isMatch": boolean,
+            "confidence": number,
+            "reasoning": "Explain why. Specifically mention if Address Line 2 was ignored per rules."
+          }`
             },
             { type: "image_url", image_url: { url: dataUrl } },
           ],
@@ -83,13 +97,20 @@ export async function verifyUserDocument(formData: FormData) {
     if (!content) return { success: false, message: "Could not analyze document." };
 
     // 5. Parse AI Response
-    let result;
+    let result: {
+      extracted?: { name: string; address: string };
+      isMatch: boolean;
+      confidence: number;
+      reasoning: string;
+    };
     try {
       result = JSON.parse(content);
     } catch (e) {
       console.error("JSON Parse Error:", e);
       return { success: false, message: "Failed to parse AI response." };
     }
+
+    console.log("AI Verification Result:", JSON.stringify(result, null, 2));
 
     // 6. Act on Verification
     if (result.isMatch === true) {
@@ -105,12 +126,19 @@ export async function verifyUserDocument(formData: FormData) {
         return { success: false, message: "Verified, but failed to update status." };
       }
 
-      return { success: true, message: "Verification Successful!" };
+      return {
+        success: true,
+        message: "Verification Successful!",
+        extracted: result.extracted,
+        confidence: result.confidence,
+      };
     } else {
-      // ❌ Failure: Return AI reasoning
+      // ❌ Failure: Return AI reasoning + what it extracted
       return {
         success: false,
-        message: `Verification failed: ${result.reasoning}`
+        message: `Verification failed: ${result.reasoning}`,
+        extracted: result.extracted,
+        confidence: result.confidence,
       };
     }
 
