@@ -4,7 +4,6 @@ import { Input } from "@/components/ui/input";
 import { motion } from "framer-motion";
 import { MapPin, Loader2 } from "lucide-react";
 import dynamic from "next/dynamic";
-import { saveUserAddress } from "@/app/actions/user";
 
 const US_STATES = [
     { value: "AL", label: "Alabama" },
@@ -62,9 +61,10 @@ const US_STATES = [
 interface GeofenceLocatorProps {
     onNext: () => void;
     onBack: () => void;
+    onAddressReady: (address: string) => void;
 }
 
-export function GeofenceLocator({ onNext, onBack }: GeofenceLocatorProps) {
+export function GeofenceLocator({ onNext, onBack, onAddressReady }: GeofenceLocatorProps) {
     const [formData, setFormData] = useState({
         line1: "",
         line2: "",
@@ -192,27 +192,15 @@ export function GeofenceLocator({ onNext, onBack }: GeofenceLocatorProps) {
                 <Button
                     disabled={!isFormValid || isLoading}
                     className="w-full h-12 text-lg mt-4"
-                    onClick={async () => {
-                        setIsLoading(true);
-                        try {
-                            // Combine address for DB storage
-                            const { line1, line2, city, state, zip } = formData;
-                            const fullAddress = `${line1}${line2 ? `, ${line2}` : ""}, ${city}, ${state} ${zip}`;
-
-                            const result = await saveUserAddress(fullAddress);
-                            if (result.success) {
-                                onNext();
-                            } else {
-                                console.error("Failed to save address");
-                            }
-                        } catch (error) {
-                            console.error("Error saving address:", error);
-                        } finally {
-                            setIsLoading(false);
-                        }
+                    onClick={() => {
+                        // Build the full address and pass it up — NO database write here
+                        const { line1, line2, city, state, zip } = formData;
+                        const fullAddress = `${line1}${line2 ? `, ${line2}` : ""}, ${city}, ${state} ${zip}`;
+                        onAddressReady(fullAddress);
+                        onNext();
                     }}
                 >
-                    {isLoading ? "Saving..." : "Continue"}
+                    Continue
                 </Button>
             </motion.div>
         </div>

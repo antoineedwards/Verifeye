@@ -27,6 +27,7 @@ interface OnboardingFlowProps {
 
 export function OnboardingFlow({ onComplete, initialStep }: OnboardingFlowProps) {
     const [step, setStep] = useState<OnboardingStep>(initialStep || "welcome");
+    const [pendingAddress, setPendingAddress] = useState<string | null>(null);
 
     const nextStep = (next: OnboardingStep) => setStep(next);
 
@@ -48,12 +49,14 @@ export function OnboardingFlow({ onComplete, initialStep }: OnboardingFlowProps)
                         <GeofenceLocator
                             onNext={() => nextStep("document-upload")}
                             onBack={() => nextStep("welcome")}
+                            onAddressReady={(address) => setPendingAddress(address)}
                         />
                     )}
-                    {step === "document-upload" && (
+                    {step === "document-upload" && pendingAddress && (
                         <DocumentUpload
                             onVerify={() => nextStep("success")}
                             onBack={() => nextStep("geofence")}
+                            address={pendingAddress}
                         />
                     )}
                     {step === "selection" && (

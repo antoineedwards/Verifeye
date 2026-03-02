@@ -8,9 +8,10 @@ import { Upload, CheckCircle2, AlertCircle } from "lucide-react";
 interface DocumentUploadProps {
   onVerify: () => void;
   onBack: () => void;
+  address: string;
 }
 
-export function DocumentUpload({ onVerify, onBack }: DocumentUploadProps) {
+export function DocumentUpload({ onVerify, onBack, address }: DocumentUploadProps) {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ success?: boolean; message?: string; error?: string } | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
@@ -25,6 +26,7 @@ export function DocumentUpload({ onVerify, onBack }: DocumentUploadProps) {
 
     const formData = new FormData();
     formData.append("file", file);
+    formData.append("address", address);
 
     const res = await verifyUserDocument(formData);
     setResult(res);
@@ -58,10 +60,10 @@ export function DocumentUpload({ onVerify, onBack }: DocumentUploadProps) {
 
         <div className="border-2 border-dashed rounded-lg p-8 text-center hover:border-primary/50 transition-colors">
           <Upload className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
-          <input 
-            type="file" 
-            accept="image/*,application/pdf" 
-            onChange={handleUpload} 
+          <input
+            type="file"
+            accept="image/*,application/pdf"
+            onChange={handleUpload}
             disabled={loading || result?.success}
             className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
           />
@@ -74,7 +76,7 @@ export function DocumentUpload({ onVerify, onBack }: DocumentUploadProps) {
             <p>Analyzing document...</p>
           </div>
         )}
-        
+
         {result?.success && (
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}

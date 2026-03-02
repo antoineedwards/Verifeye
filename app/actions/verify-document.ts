@@ -18,21 +18,9 @@ export async function verifyUserDocument(formData: FormData) {
   const session = await auth();
   if (!session?.user?.id) return { error: "Not authenticated" };
 
-  // 2. Pull target name & address from Supabase (single source of truth)
-  const { data: userProfile, error: profileError } = await supabase
-    .schema("next_auth")
-    .from("users")
-    .select("name, address")
-    .eq("id", session.user.id)
-    .single();
-
-  if (profileError || !userProfile) {
-    console.error("Supabase Profile Fetch Error:", profileError);
-    return { error: "Could not retrieve your profile. Please try again." };
-  }
-
-  const targetName = userProfile.name;
-  const targetAddress = userProfile.address;
+  // 2. Get target data — address comes from the client form (not yet saved to DB)
+  const targetName = session.user.name;
+  const targetAddress = formData.get("address") as string | null;
 
   if (!targetName || !targetAddress) {
     return { error: "User profile is missing name or address. Cannot verify." };
@@ -114,11 +102,14 @@ export async function verifyUserDocument(formData: FormData) {
 
     // 6. Act on Verification
     if (result.isMatch === true) {
-      // ✅ Success: Update Database
+      // ✅ Success: Save address AND mark as verified (first time address touches DB)
+      const toTitleCase = (str: string) =>
+        str.toLowerCase().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+
       const { error } = await supabase
         .schema("next_auth")
         .from("users")
-        .update({ address_verified: true })
+        .update({ address: toTitleCase(targetAddress), address_verified: true })
         .eq("id", session.user.id);
 
       if (error) {
