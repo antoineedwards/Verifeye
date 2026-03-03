@@ -114,10 +114,10 @@ export function IncidentCard({
 
     const getStatusColor = (s: string) => {
         switch (s) {
-            case "Verified": return "bg-emerald-100 text-emerald-700 border-emerald-200";
-            case "Resolved": return "bg-blue-100 text-blue-700 border-blue-200";
-            case "Unverified": return "bg-amber-100 text-amber-700 border-amber-200";
-            default: return "bg-slate-100 text-slate-700 border-slate-200";
+            case "Verified": return "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/50 dark:text-emerald-400 dark:border-emerald-800";
+            case "Resolved": return "bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/50 dark:text-blue-400 dark:border-blue-800";
+            case "Unverified": return "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/50 dark:text-amber-400 dark:border-amber-800";
+            default: return "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800/50 dark:text-slate-400 dark:border-slate-700";
         }
     };
 
@@ -125,24 +125,31 @@ export function IncidentCard({
         const typeLower = t?.toLowerCase() || '';
         if (typeLower.includes("crime")) {
             return {
-                bg: "bg-gradient-to-br from-red-50 to-background",
-                border: "border-red-200",
-                iconBg: "bg-red-100",
-                iconColor: "text-red-600"
+                bg: "bg-gradient-to-br from-red-50 to-background dark:from-red-950/60 dark:to-background",
+                border: "border-red-200 dark:border-red-900",
+                iconBg: "bg-red-100 dark:bg-red-900/50",
+                iconColor: "text-red-600 dark:text-red-400"
             };
         } else if (typeLower.includes("hazard")) {
             return {
-                bg: "bg-gradient-to-br from-orange-50 to-background",
-                border: "border-orange-200",
-                iconBg: "bg-orange-100",
-                iconColor: "text-orange-600"
+                bg: "bg-gradient-to-br from-orange-50 to-background dark:from-orange-950/60 dark:to-background",
+                border: "border-orange-200 dark:border-orange-900",
+                iconBg: "bg-orange-100 dark:bg-orange-900/50",
+                iconColor: "text-orange-600 dark:text-orange-400"
+            };
+        } else if (typeLower.includes("pet") || typeLower.includes("missing")) {
+            return {
+                bg: "bg-gradient-to-br from-violet-50 to-background dark:from-violet-950/60 dark:to-background",
+                border: "border-violet-200 dark:border-violet-900",
+                iconBg: "bg-violet-100 dark:bg-violet-900/50",
+                iconColor: "text-violet-600 dark:text-violet-400"
             };
         } else {
             return {
-                bg: "bg-gradient-to-br from-blue-50 to-background",
-                border: "border-blue-200",
-                iconBg: "bg-blue-100",
-                iconColor: "text-blue-600"
+                bg: "bg-gradient-to-br from-blue-50 to-background dark:from-blue-950/60 dark:to-background",
+                border: "border-blue-200 dark:border-blue-900",
+                iconBg: "bg-blue-100 dark:bg-blue-900/50",
+                iconColor: "text-blue-600 dark:text-blue-400"
             };
         }
     };
@@ -163,10 +170,10 @@ export function IncidentCard({
         >
             {isOwner && !isEditing && (
                 <div className="absolute top-2 right-2 flex gap-1 z-10" onClick={(e) => e.stopPropagation()}>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 bg-white/70 hover:bg-white shadow-sm" onClick={() => setIsEditing(true)}>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 bg-white/70 hover:bg-white dark:bg-white/10 dark:hover:bg-white/20 shadow-sm" onClick={() => setIsEditing(true)}>
                         <Edit2 className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 bg-white/70 hover:bg-white hover:text-red-600 shadow-sm" onClick={handleDelete}>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 bg-white/70 hover:bg-white dark:bg-white/10 dark:hover:bg-white/20 hover:text-red-600 shadow-sm" onClick={handleDelete}>
                         <Trash2 className="h-4 w-4" />
                     </Button>
                 </div>
@@ -240,7 +247,7 @@ export function IncidentCard({
                 <div className="grid grid-cols-2 border-t divide-x" onClick={(e) => e.stopPropagation()}>
                     <Button
                         variant="ghost"
-                        className="rounded-none h-12 text-green-600 hover:text-green-700 hover:bg-green-50"
+                        className="rounded-none h-12 text-green-600 hover:text-green-700 hover:bg-green-50 dark:text-green-400 dark:hover:text-green-300 dark:hover:bg-green-950/50"
                         onClick={handleVerify}
                     >
                         <CheckCircle2 className="h-4 w-4 mr-2" />
@@ -248,7 +255,7 @@ export function IncidentCard({
                     </Button>
                     <Button
                         variant="ghost"
-                        className="rounded-none h-12 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        className="rounded-none h-12 text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-950/50"
                         onClick={handleDispute}
                     >
                         <XCircle className="h-4 w-4 mr-2" />

@@ -1,6 +1,6 @@
 "use client";
 
-import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, Circle, useMap, useMapEvents } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { useEffect } from "react";
@@ -21,6 +21,12 @@ interface LeafletMapProps {
     markerPosition?: [number, number];
     onLocationSelect?: (latlng: { lat: number; lng: number }) => void;
     interactive?: boolean;
+    showMarker?: boolean;
+    circle?: {
+        center: [number, number];
+        radius: number;
+        color: string;
+    };
 }
 
 function ChangeView({ center, zoom }: { center: [number, number]; zoom: number }) {
@@ -46,7 +52,9 @@ export default function LeafletMap({
     className,
     markerPosition,
     onLocationSelect,
-    interactive = false
+    interactive = false,
+    showMarker = true,
+    circle,
 }: LeafletMapProps) {
     const marker = markerPosition || center;
 
@@ -64,11 +72,25 @@ export default function LeafletMap({
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
-            <Marker position={marker}>
-                <Popup>
-                    {interactive ? "Incident location" : "Your neighborhood"}
-                </Popup>
-            </Marker>
+            {circle && (
+                <Circle
+                    center={circle.center}
+                    radius={circle.radius}
+                    pathOptions={{
+                        color: circle.color,
+                        fillColor: circle.color,
+                        fillOpacity: 0.15,
+                        weight: 2,
+                    }}
+                />
+            )}
+            {showMarker && (
+                <Marker position={marker}>
+                    <Popup>
+                        {interactive ? "Incident location" : "Your neighborhood"}
+                    </Popup>
+                </Marker>
+            )}
         </MapContainer>
     );
 }

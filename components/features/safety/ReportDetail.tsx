@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Image from "next/image";
+import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     ArrowLeft,
@@ -45,6 +46,7 @@ const CATEGORY_STYLES: Record<string, { bg: string; text: string }> = {
     vandalism: { bg: "bg-orange-100", text: "text-orange-700" },
     safety: { bg: "bg-blue-100", text: "text-blue-700" },
     noise: { bg: "bg-purple-100", text: "text-purple-700" },
+    missing_pet: { bg: "bg-violet-100", text: "text-violet-700" },
     other: { bg: "bg-gray-100", text: "text-gray-700" },
     general: { bg: "bg-gray-100", text: "text-gray-700" },
 };
@@ -59,6 +61,20 @@ export function ReportDetail({ reportId, onBack }: ReportDetailProps) {
     const [showComments, setShowComments] = useState(false);
     const [hasVoted, setHasVoted] = useState(false);
     const [userVoteType, setUserVoteType] = useState<'confirm' | 'dispute' | null>(null);
+
+    // Dynamically import map to avoid SSR issues
+    const Map = useMemo(() => dynamic(
+        () => import("@/components/ui/leaflet-map"),
+        { loading: () => <div className="h-full w-full flex items-center justify-center bg-muted"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>, ssr: false }
+    ), []);
+
+    const getCircleColor = (category: string | null) => {
+        const cat = (category || "").toLowerCase();
+        if (cat.includes("theft") || cat.includes("crime") || cat.includes("suspicious")) return "#dc2626";
+        if (cat.includes("hazard") || cat.includes("vandalism")) return "#ea580c";
+        if (cat.includes("pet") || cat.includes("missing")) return "#7c3aed";
+        return "#2563eb";
+    };
 
     useEffect(() => {
         const fetchData = async () => {
@@ -232,6 +248,22 @@ export function ReportDetail({ reportId, onBack }: ReportDetailProps) {
                             <span>Verified by {report.report_count || 0} neighbor{(report.report_count || 0) !== 1 ? "s" : ""}</span>
                         </div>
                     </div>
+
+                    {/* Map with Circle Overlay */}
+                    {report.latitude && report.longitude && (
+                        <div className="rounded-xl overflow-hidden border shadow-sm h-[200px]">
+                            <Map
+                                center={[report.latitude, report.longitude]}
+                                zoom={15}
+                                showMarker={false}
+                                circle={{
+                                    center: [report.latitude, report.longitude],
+                                    radius: 200,
+                                    color: getCircleColor(report.category),
+                                }}
+                            />
+                        </div>
+                    )}
 
                     {/* Voting */}
                     <div className="border rounded-xl p-4 space-y-3 bg-card">

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { getUserProfile } from "@/app/actions/user";
 import { signOut } from "next-auth/react";
+import { useTheme } from "next-themes";
 
 import {
     Popover,
@@ -11,9 +12,10 @@ import {
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MapPin, Shield, LogOut } from "lucide-react";
+import { MapPin, Shield, LogOut, Sun, Moon } from "lucide-react";
 
 export function ProfileMenu() {
+    const { theme, setTheme } = useTheme();
     const [user, setUser] = useState<{
         name: string | null;
         image: string | null;
@@ -85,7 +87,19 @@ export function ProfileMenu() {
                     </div>
                     <Button
                         variant="ghost"
-                        className="w-full justify-start gap-2 text-muted-foreground hover:text-destructive mt-2"
+                        className="w-full justify-start gap-2 text-muted-foreground mt-2"
+                        onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                    >
+                        {theme === "dark" ? (
+                            <Sun className="h-4 w-4" />
+                        ) : (
+                            <Moon className="h-4 w-4" />
+                        )}
+                        {theme === "dark" ? "Light Mode" : "Dark Mode"}
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        className="w-full justify-start gap-2 text-muted-foreground hover:text-destructive"
                         onClick={() => signOut({ redirectTo: "/" })}
                     >
                         <LogOut className="h-4 w-4" />

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { HomeTab } from "./HomeTab";
 import { IncidentTypeSelection } from "./IncidentTypeSelection";
+import { SafetyGuidelines } from "./SafetyGuidelines";
 import { LocationConfirmation } from "./LocationConfirmation";
 import { IncidentDetails } from "./IncidentDetails";
 import { CommunityTab } from "@/components/features/community/CommunityTab";
@@ -17,7 +18,7 @@ import { toast } from "sonner";
 
 import { createReport } from "@/app/actions/reports";
 
-type ReportingStep = "home" | "type-selection" | "location" | "details" | "community" | "create-post" | "resources" | "report-detail" | "post-detail";
+type ReportingStep = "home" | "type-selection" | "safety-guidelines" | "location" | "details" | "community" | "create-post" | "resources" | "report-detail" | "post-detail";
 
 export function IncidentReportingFlow() {
     const [step, setStep] = useState<ReportingStep>("home");
@@ -40,7 +41,12 @@ export function IncidentReportingFlow() {
 
     const handleTypeSelect = (type: string) => {
         setIncidentData({ ...incidentData, type });
-        setStep("location");
+        // Skip safety guidelines for missing pet reports
+        if (type === "missing_pet") {
+            setStep("location");
+        } else {
+            setStep("safety-guidelines");
+        }
     };
 
     const handleLocationConfirm = (location: string, coordinates: { lat: number; lng: number }) => {
@@ -186,6 +192,21 @@ export function IncidentReportingFlow() {
                             <IncidentTypeSelection
                                 onSelect={handleTypeSelect}
                                 onBack={() => setStep("home")}
+                            />
+                        </motion.div>
+                    )}
+
+                    {step === "safety-guidelines" && (
+                        <motion.div
+                            key="safety-guidelines"
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -20 }}
+                            className="h-full absolute inset-0 z-50 bg-background"
+                        >
+                            <SafetyGuidelines
+                                onContinue={() => setStep("location")}
+                                onBack={() => setStep("type-selection")}
                             />
                         </motion.div>
                     )}

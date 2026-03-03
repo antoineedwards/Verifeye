@@ -2,6 +2,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "sonner";
 import { AuthProvider } from "@/components/providers/session-provider/session-provider";
+import { ThemeProvider } from "@/components/providers/theme-provider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -22,13 +23,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <AuthProvider>
-          {children}
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            {children}
+          </AuthProvider>
+        </ThemeProvider>
         <Toaster />
       </body>
     </html>
   );
 }
+

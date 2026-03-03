@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import { AlertTriangle, Flame, ShieldAlert } from "lucide-react";
+import { AlertTriangle, Flame, ShieldAlert, PawPrint } from "lucide-react";
 
 interface IncidentTypeSelectionProps {
     onSelect: (type: string) => void;
@@ -29,6 +29,13 @@ export function IncidentTypeSelection({ onSelect, onBack }: IncidentTypeSelectio
             icon: Flame,
             color: "bg-rose-600",
             description: "Smoke, fire, or medical emergencies"
+        },
+        {
+            id: "missing_pet",
+            label: "Missing Pet",
+            icon: PawPrint,
+            color: "bg-violet-500",
+            description: "Lost or found pets in your area"
         }
     ];
 
