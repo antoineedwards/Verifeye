@@ -13,8 +13,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize PaddleOCR once (reused across requests)
-ocr = PaddleOCR(use_angle_cls=True, lang="en", show_log=False)
+# Lazy-load PaddleOCR (so /health responds immediately on startup)
+_ocr = None
+
+
+def get_ocr():
+    global _ocr
+    if _ocr is None:
+        _ocr = PaddleOCR(use_angle_cls=True, lang="en", show_log=False)
+    return _ocr
 
 
 @app.get("/health")
@@ -34,6 +41,7 @@ async def extract_text(file: UploadFile = File(...)):
 
     try:
         # Run PaddleOCR
+        ocr = get_ocr()
         result = ocr.ocr(tmp_path, cls=True)
 
         # Extract text lines with confidence scores
