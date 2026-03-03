@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSession } from "next-auth/react";
 import { HomeTab } from "./HomeTab";
 import { IncidentTypeSelection } from "./IncidentTypeSelection";
 import { SafetyGuidelines } from "./SafetyGuidelines";
@@ -11,6 +12,8 @@ import { CreatePost } from "@/components/features/community/CreatePost";
 import { CommunityPostDetail } from "@/components/features/community/CommunityPostDetail";
 import { ResourcesTab } from "@/components/features/resources/ResourcesTab";
 import { ReportDetail } from "@/components/features/safety/ReportDetail";
+import { MessagesTab } from "@/components/features/messages/MessagesTab";
+import { ChatView } from "@/components/features/messages/ChatView";
 import { BottomNav } from "@/components/ui/bottom-nav";
 import { AppHeader } from "@/components/ui/app-header";
 import { AnimatePresence, motion } from "framer-motion";
@@ -18,14 +21,17 @@ import { toast } from "sonner";
 
 import { createReport } from "@/app/actions/reports";
 
-type ReportingStep = "home" | "type-selection" | "safety-guidelines" | "location" | "details" | "community" | "create-post" | "resources" | "report-detail" | "post-detail";
+type ReportingStep = "home" | "type-selection" | "safety-guidelines" | "location" | "details" | "community" | "create-post" | "resources" | "report-detail" | "post-detail" | "messages" | "chat";
 
 export function IncidentReportingFlow() {
+    const { data: session } = useSession();
     const [step, setStep] = useState<ReportingStep>("home");
-    const [activeTab, setActiveTab] = useState<"home" | "community" | "resources">("home");
+    const [activeTab, setActiveTab] = useState<"home" | "community" | "resources" | "messages">("home");
     const [isPosting, setIsPosting] = useState(false);
     const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
     const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
+    const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
+    const [selectedChatUserName, setSelectedChatUserName] = useState<string>("Neighbor");
     const [incidentData, setIncidentData] = useState<{
         type?: string;
         location?: string;
@@ -34,7 +40,7 @@ export function IncidentReportingFlow() {
         description?: string;
     }>({});
 
-    const handleTabChange = (tab: "home" | "community" | "resources") => {
+    const handleTabChange = (tab: "home" | "community" | "resources" | "messages") => {
         setActiveTab(tab);
         setStep(tab);
     };
@@ -125,7 +131,7 @@ export function IncidentReportingFlow() {
     };
 
     // Determine if we should show the main header
-    const showHeader = step === "home" || step === "community" || step === "resources";
+    const showHeader = step === "home" || step === "community" || step === "resources" || step === "messages";
 
     return (
         <div className="h-screen w-full max-w-md mx-auto bg-background overflow-hidden relative shadow-xl flex flex-col">
@@ -178,6 +184,45 @@ export function IncidentReportingFlow() {
                             className="h-full"
                         >
                             <ResourcesTab />
+                        </motion.div>
+                    )}
+
+                    {step === "messages" && (
+                        <motion.div
+                            key="messages"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="h-full"
+                        >
+                            <MessagesTab
+                                onOpenChat={(conversationId, userName) => {
+                                    setSelectedConversationId(conversationId);
+                                    setSelectedChatUserName(userName);
+                                    setStep("chat");
+                                }}
+                            />
+                        </motion.div>
+                    )}
+
+                    {step === "chat" && selectedConversationId && (
+                        <motion.div
+                            key="chat"
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -20 }}
+                            className="h-full absolute inset-0 z-50 bg-background"
+                        >
+                            <ChatView
+                                conversationId={selectedConversationId}
+                                otherUserName={selectedChatUserName}
+                                currentUserId={session?.user?.id || ""}
+                                onBack={() => {
+                                    setSelectedConversationId(null);
+                                    setStep("messages");
+                                    setActiveTab("messages");
+                                }}
+                            />
                         </motion.div>
                     )}
 

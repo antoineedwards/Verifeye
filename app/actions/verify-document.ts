@@ -106,10 +106,31 @@ export async function verifyUserDocument(formData: FormData) {
       const toTitleCase = (str: string) =>
         str.toLowerCase().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 
+      // Geocode the address for proximity messaging
+      let latitude: number | null = null;
+      let longitude: number | null = null;
+      try {
+        const geocodeRes = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(targetAddress)}&limit=1`,
+          { headers: { "User-Agent": "Verifeye-App/1.0" } }
+        );
+        const geocodeData = await geocodeRes.json();
+        if (geocodeData.length > 0) {
+          latitude = parseFloat(geocodeData[0].lat);
+          longitude = parseFloat(geocodeData[0].lon);
+        }
+      } catch (geoErr) {
+        console.warn("Geocoding failed (non-blocking):", geoErr);
+      }
+
       const { error } = await supabase
         .schema("next_auth")
         .from("users")
-        .update({ address: toTitleCase(targetAddress), address_verified: true })
+        .update({
+          address: toTitleCase(targetAddress),
+          address_verified: true,
+          ...(latitude !== null && longitude !== null ? { latitude, longitude } : {}),
+        })
         .eq("id", session.user.id);
 
       if (error) {
