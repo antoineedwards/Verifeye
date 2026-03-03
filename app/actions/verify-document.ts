@@ -1,24 +1,93 @@
 "use server"
-import OpenAI from "openai";
 import { auth } from "@/auth";
 import { createClient } from "@supabase/supabase-js";
 
-// Initialize Supabase for updating the user status later
 const supabase = createClient(
   process.env.SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+const OCR_SERVICE_URL = process.env.OCR_SERVICE_URL || "http://localhost:8000";
+
+// ─── Address Normalization ──────────────────────────────────────────
+
+const ABBREVIATIONS: Record<string, string> = {
+  street: "ST", str: "ST", st: "ST",
+  avenue: "AVE", ave: "AVE",
+  boulevard: "BLVD", blvd: "BLVD",
+  drive: "DR", dr: "DR",
+  lane: "LN", ln: "LN",
+  road: "RD", rd: "RD",
+  court: "CT", ct: "CT",
+  circle: "CIR", cir: "CIR",
+  place: "PL", pl: "PL",
+  way: "WAY",
+  terrace: "TER", ter: "TER",
+  trail: "TRL", trl: "TRL",
+  parkway: "PKWY", pkwy: "PKWY",
+  highway: "HWY", hwy: "HWY",
+  apartment: "APT", apt: "APT",
+  suite: "STE", ste: "STE",
+  unit: "UNIT",
+  room: "RM", rm: "RM",
+  building: "BLDG", bldg: "BLDG",
+  floor: "FL", fl: "FL",
+  north: "N", south: "S", east: "E", west: "W",
+  northeast: "NE", northwest: "NW", southeast: "SE", southwest: "SW",
+};
+
+function normalizeAddress(address: string): string {
+  return address
+    .toUpperCase()
+    .replace(/[.,#]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .split(" ")
+    .map(word => ABBREVIATIONS[word.toLowerCase()] || word)
+    .join(" ");
+}
+
+function extractStreetPrimary(normalized: string): string {
+  // Extract house number + street name (ignore unit/apt/suite)
+  const stopWords = ["APT", "STE", "UNIT", "RM", "BLDG", "FL", "#"];
+  const parts = normalized.split(" ");
+  const primary: string[] = [];
+
+  for (const part of parts) {
+    if (stopWords.includes(part)) break;
+    primary.push(part);
+  }
+
+  return primary.join(" ");
+}
+
+function fuzzyNameMatch(name1: string, name2: string): boolean {
+  const n1 = name1.toUpperCase().trim();
+  const n2 = name2.toUpperCase().trim();
+
+  // Exact match
+  if (n1 === n2) return true;
+
+  // One name contains the other
+  if (n1.includes(n2) || n2.includes(n1)) return true;
+
+  // Compare individual name parts (handles middle name differences, etc.)
+  const parts1 = n1.split(/\s+/);
+  const parts2 = n2.split(/\s+/);
+
+  // At least first and last name should match
+  const matchingParts = parts1.filter(p => parts2.includes(p));
+  return matchingParts.length >= 2 || (matchingParts.length >= 1 && Math.min(parts1.length, parts2.length) === 1);
+}
+
+// ─── Main Verification ─────────────────────────────────────────────
 
 export async function verifyUserDocument(formData: FormData) {
   // 1. Get Session
   const session = await auth();
   if (!session?.user?.id) return { error: "Not authenticated" };
 
-  // 2. Get target data — address comes from the client form (not yet saved to DB)
+  // 2. Get target data
   const targetName = session.user.name;
   const targetAddress = formData.get("address") as string | null;
 
@@ -30,79 +99,94 @@ export async function verifyUserDocument(formData: FormData) {
   if (!file || file.size === 0) return { error: "No file uploaded" };
 
   try {
-    // 3. Prepare Image for AI
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-    const base64Image = buffer.toString('base64');
-    const dataUrl = `data:${file.type};base64,${base64Image}`;
+    // 3. Send image to PaddleOCR service
+    const ocrFormData = new FormData();
+    ocrFormData.append("file", file);
 
-    // 4. Send to OpenAI Vision (Address Verification Agent)
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini", // Standard gpt-4o for Vision tasks; much better at small text like 'RM 304C'
-      messages: [
-        {
-          role: "system",
-          content: `You are a specialized Address Verification Agent. 
-      Your goal is to determine if a physical document (utility bill, ID, etc.) matches a digital profile.
-      
-      CRITICAL HIERARCHY:
-      1. Primary Match: Street Number + Street Name must match exactly (ignoring abbreviations).
-      2. Secondary Match: Name must be a variation of the same person.
-      3. Disregard: Address Line 2 (Unit, Apt, Room, Suite) is OPTIONAL. If the primary street match is perfect, a mismatch or absence of Line 2 is still a VALID MATCH.`
-        },
-        {
-          role: "user",
-          content: [
-            {
-              type: "text",
-              text: `
-          --- TARGET PROFILE ---
-          Name: "${targetName}"
-          Address: "${targetAddress}"
-
-          --- INSTRUCTIONS ---
-          1. Extract the name and full address from the image.
-          2. Normalize the extracted data (e.g., 'Avenue' -> 'AVE', 'Street' -> 'ST', etc).
-          3. Compare the 'Primary Address' (House Number + Street).
-          4. If Primary matches, but Address Line 2 is missing or different, MARK AS MATCH.
-
-          Return JSON ONLY:
-          {
-            "extracted": { "name": string, "address": string },
-            "isMatch": boolean,
-            "confidence": number,
-            "reasoning": "Explain why. Specifically mention if Address Line 2 was ignored per rules."
-          }`
-            },
-            { type: "image_url", image_url: { url: dataUrl } },
-          ],
-        },
-      ],
-      response_format: { type: "json_object" },
+    const ocrResponse = await fetch(`${OCR_SERVICE_URL}/extract-text`, {
+      method: "POST",
+      body: ocrFormData,
     });
 
-    const content = response.choices[0].message.content;
-    if (!content) return { success: false, message: "Could not analyze document." };
-
-    // 5. Parse AI Response
-    let result: {
-      extracted?: { name: string; address: string };
-      isMatch: boolean;
-      confidence: number;
-      reasoning: string;
-    };
-    try {
-      result = JSON.parse(content);
-    } catch (e) {
-      console.error("JSON Parse Error:", e);
-      return { success: false, message: "Failed to parse AI response." };
+    if (!ocrResponse.ok) {
+      console.error("OCR service error:", ocrResponse.status);
+      return { error: "OCR service is unavailable. Please try again." };
     }
 
-    console.log("AI Verification Result:", JSON.stringify(result, null, 2));
+    const ocrResult = await ocrResponse.json();
+
+    if (!ocrResult.success || !ocrResult.full_text) {
+      return { success: false, message: "Could not read text from the document. Please upload a clearer image." };
+    }
+
+    console.log("OCR Extracted Text:", ocrResult.full_text);
+
+    // 4. Deterministic Address Matching
+    const extractedText = ocrResult.full_text;
+    const normalizedTarget = normalizeAddress(targetAddress);
+    const targetPrimary = extractStreetPrimary(normalizedTarget);
+
+    // Search extracted text for address match
+    const extractedLines = extractedText.split("\n").map((l: string) => l.trim()).filter(Boolean);
+
+    let addressMatch = false;
+    let nameMatch = false;
+    let matchedAddress = "";
+    let matchedName = "";
+
+    // Check each line for address components
+    for (const line of extractedLines) {
+      const normalizedLine = normalizeAddress(line);
+      const linePrimary = extractStreetPrimary(normalizedLine);
+
+      // Check if this line contains the target street address
+      if (targetPrimary && linePrimary && targetPrimary === linePrimary) {
+        addressMatch = true;
+        matchedAddress = line;
+      }
+
+      // Also try partial match: target primary contained in the line
+      if (!addressMatch && targetPrimary && normalizedLine.includes(targetPrimary)) {
+        addressMatch = true;
+        matchedAddress = line;
+      }
+
+      // Check name match
+      if (fuzzyNameMatch(line, targetName)) {
+        nameMatch = true;
+        matchedName = line;
+      }
+    }
+
+    // Also check if name parts appear anywhere in the full text
+    if (!nameMatch) {
+      const nameParts = targetName.toUpperCase().split(/\s+/);
+      const textUpper = extractedText.toUpperCase();
+      const foundParts = nameParts.filter(part => part.length > 1 && textUpper.includes(part));
+      if (foundParts.length >= 2 || (foundParts.length >= 1 && nameParts.length === 1)) {
+        nameMatch = true;
+        matchedName = foundParts.join(" ") + " (found in document text)";
+      }
+    }
+
+    // 5. Determine result
+    const isMatch = addressMatch && nameMatch;
+    const confidence = (addressMatch ? 0.5 : 0) + (nameMatch ? 0.5 : 0);
+
+    let reasoning = "";
+    if (isMatch) {
+      reasoning = `Address "${matchedAddress}" matches target. Name "${matchedName}" matches "${targetName}".`;
+    } else {
+      const issues = [];
+      if (!addressMatch) issues.push(`Could not find address matching "${targetAddress}" in the document`);
+      if (!nameMatch) issues.push(`Could not find name matching "${targetName}" in the document`);
+      reasoning = issues.join(". ") + ".";
+    }
+
+    console.log("Verification Result:", { isMatch, addressMatch, nameMatch, confidence, reasoning });
 
     // 6. Act on Verification
-    if (result.isMatch === true) {
-      // ✅ Success: Save address AND mark as verified (first time address touches DB)
+    if (isMatch) {
       const toTitleCase = (str: string) =>
         str.toLowerCase().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 
@@ -141,21 +225,20 @@ export async function verifyUserDocument(formData: FormData) {
       return {
         success: true,
         message: "Verification Successful!",
-        extracted: result.extracted,
-        confidence: result.confidence,
+        extracted: { name: matchedName, address: matchedAddress },
+        confidence,
       };
     } else {
-      // ❌ Failure: Return AI reasoning + what it extracted
       return {
         success: false,
-        message: `Verification failed: ${result.reasoning}`,
-        extracted: result.extracted,
-        confidence: result.confidence,
+        message: `Verification failed: ${reasoning}`,
+        extracted: { name: matchedName || "(not found)", address: matchedAddress || "(not found)" },
+        confidence,
       };
     }
 
   } catch (error) {
-    console.error("OpenAI Error:", error);
+    console.error("Verification Error:", error);
     return { error: "Error processing the document. Please try again." };
   }
 }
