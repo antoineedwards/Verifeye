@@ -38,7 +38,7 @@ export async function verifyUserDocument(formData: FormData) {
 
     // 4. Send to OpenAI Vision (Address Verification Agent)
     const response = await openai.chat.completions.create({
-      model: "gpt-4o", // Standard gpt-4o for Vision tasks; much better at small text like 'RM 304C'
+      model: "gpt-4o-mini", // Standard gpt-4o for Vision tasks; much better at small text like 'RM 304C'
       messages: [
         {
           role: "system",
@@ -62,9 +62,9 @@ export async function verifyUserDocument(formData: FormData) {
 
           --- INSTRUCTIONS ---
           1. Extract the name and full address from the image.
-          2. Normalize the extracted data (e.g., 'Avenue' -> 'AVE', 'Antoine' -> 'ANTOINE').
+          2. Normalize the extracted data (e.g., 'Avenue' -> 'AVE', 'Street' -> 'ST', etc).
           3. Compare the 'Primary Address' (House Number + Street).
-          4. If Primary matches, but Address Line 2 (like 'RM 304C' or 'Apt 4') is missing or different, MARK AS MATCH.
+          4. If Primary matches, but Address Line 2 is missing or different, MARK AS MATCH.
 
           Return JSON ONLY:
           {
