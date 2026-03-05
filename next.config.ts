@@ -19,6 +19,7 @@ const nextConfig: NextConfig = {
         // 'verifeye.vercel.app',
       ],
     },
+    serverComponentsExternalPackages: ['tesseract.js'],
   },
   reactCompiler: true,
 };

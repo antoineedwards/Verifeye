@@ -1,13 +1,13 @@
 "use server"
 import { auth } from "@/auth";
 import { createClient } from "@supabase/supabase-js";
+import { createWorker } from "tesseract.js";
+import path from "path";
 
 const supabase = createClient(
   process.env.SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
-
-const OCR_SERVICE_URL = process.env.OCR_SERVICE_URL || "http://localhost:8000";
 
 // ─── Address Normalization ──────────────────────────────────────────
 
@@ -99,34 +99,33 @@ export async function verifyUserDocument(formData: FormData) {
   if (!file || file.size === 0) return { error: "No file uploaded" };
 
   try {
-    // 3. Send image to PaddleOCR service
-    const ocrFormData = new FormData();
-    ocrFormData.append("file", file);
+    // 3. Run Tesseract.js OCR directly
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
 
-    const ocrResponse = await fetch(`${OCR_SERVICE_URL}/extract-text`, {
-      method: "POST",
-      body: ocrFormData,
+    console.log("Initializing Tesseract worker...");
+    const worker = await createWorker("eng", 1, {
+      workerPath: path.join(process.cwd(), "node_modules/tesseract.js/src/worker-script/node/index.js"),
     });
 
-    if (!ocrResponse.ok) {
-      console.error("OCR service error:", ocrResponse.status);
-      return { error: "OCR service is unavailable. Please try again." };
-    }
+    console.log("Running OCR...");
+    const { data } = await worker.recognize(buffer);
 
-    const ocrResult = await ocrResponse.json();
+    console.log("Terminating worker...");
+    await worker.terminate();
 
-    if (!ocrResult.success || !ocrResult.full_text) {
+    const extractedText = data.text;
+
+    if (!extractedText || extractedText.trim().length < 5) {
       return { success: false, message: "Could not read text from the document. Please upload a clearer image." };
     }
 
-    console.log("OCR Extracted Text:", ocrResult.full_text);
+    console.log("OCR Extracted Text:", extractedText);
 
     // 4. Deterministic Address Matching
-    const extractedText = ocrResult.full_text;
     const normalizedTarget = normalizeAddress(targetAddress);
     const targetPrimary = extractStreetPrimary(normalizedTarget);
 
-    // Search extracted text for address match
     const extractedLines = extractedText.split("\n").map((l: string) => l.trim()).filter(Boolean);
 
     let addressMatch = false;
@@ -134,18 +133,17 @@ export async function verifyUserDocument(formData: FormData) {
     let matchedAddress = "";
     let matchedName = "";
 
-    // Check each line for address components
     for (const line of extractedLines) {
       const normalizedLine = normalizeAddress(line);
       const linePrimary = extractStreetPrimary(normalizedLine);
 
-      // Check if this line contains the target street address
+      // Check street address match
       if (targetPrimary && linePrimary && targetPrimary === linePrimary) {
         addressMatch = true;
         matchedAddress = line;
       }
 
-      // Also try partial match: target primary contained in the line
+      // Partial match: target primary contained in the line
       if (!addressMatch && targetPrimary && normalizedLine.includes(targetPrimary)) {
         addressMatch = true;
         matchedAddress = line;
@@ -190,10 +188,31 @@ export async function verifyUserDocument(formData: FormData) {
       const toTitleCase = (str: string) =>
         str.toLowerCase().split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 
+      // Geocode the address for proximity messaging
+      let latitude: number | null = null;
+      let longitude: number | null = null;
+      try {
+        const geocodeRes = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(targetAddress)}&limit=1`,
+          { headers: { "User-Agent": "Verifeye-App/1.0" } }
+        );
+        const geocodeData = await geocodeRes.json();
+        if (geocodeData.length > 0) {
+          latitude = parseFloat(geocodeData[0].lat);
+          longitude = parseFloat(geocodeData[0].lon);
+        }
+      } catch (geoErr) {
+        console.warn("Geocoding failed (non-blocking):", geoErr);
+      }
+
       const { error } = await supabase
         .schema("next_auth")
         .from("users")
-        .update({ address: toTitleCase(targetAddress), address_verified: true })
+        .update({
+          address: toTitleCase(targetAddress),
+          address_verified: true,
+          ...(latitude !== null && longitude !== null ? { latitude, longitude } : {}),
+        })
         .eq("id", session.user.id);
 
       if (error) {
