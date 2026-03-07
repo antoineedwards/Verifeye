@@ -56,40 +56,70 @@ export async function getNearbyUsers(): Promise<NearbyUser[]> {
     const session = await auth()
     if (!session?.user?.id) return []
 
-    // Get current user's location
+    // Get current user's location AND address
     const { data: currentUser } = await supabase
         .schema("next_auth")
         .from("users")
-        .select("latitude, longitude")
+        .select("latitude, longitude, address")
         .eq("id", session.user.id)
         .single()
 
-    if (!currentUser?.latitude || !currentUser?.longitude) return []
+    if (!currentUser) return []
 
-    const { latitude: myLat, longitude: myLng } = currentUser
+    // ── Path A: Coordinate-based proximity (preferred) ─────────────────
+    if (currentUser.latitude && currentUser.longitude) {
+        const { latitude: myLat, longitude: myLng } = currentUser
 
-    // Bounding box (~1 mile ≈ 0.0145° latitude, longitude varies)
-    const latDelta = 0.0145
-    const lngDelta = 0.0145 / Math.cos(myLat * Math.PI / 180)
+        // Bounding box (~1 mile ≈ 0.0145° latitude, longitude varies)
+        const latDelta = 0.0145
+        const lngDelta = 0.0145 / Math.cos(myLat * Math.PI / 180)
+
+        const { data: users } = await supabase
+            .schema("next_auth")
+            .from("users")
+            .select("id, name, image, latitude, longitude")
+            .neq("id", session.user.id)
+            .eq("address_verified", true)
+            .gte("latitude", myLat - latDelta)
+            .lte("latitude", myLat + latDelta)
+            .gte("longitude", myLng - lngDelta)
+            .lte("longitude", myLng + lngDelta)
+
+        if (!users) return []
+
+        // Refine with Haversine and sort alphabetically (not by distance for privacy)
+        return users
+            .filter(u => u.latitude && u.longitude &&
+                haversineDistance(myLat, myLng, u.latitude, u.longitude) <= 1
+            )
+            .sort((a, b) => (a.name || "").localeCompare(b.name || ""))
+            .map(u => ({ id: u.id, name: u.name, image: u.image }))
+    }
+
+    // ── Path B: Address-string fallback (when geocoding failed) ────────
+    // Match users who share the same street number + street name
+    if (!currentUser.address) return []
+
+    // Extract "915 S JACKSON" from "915 S Jackson St, Montgomery, AL 36104"
+    const streetKey = currentUser.address
+        .toUpperCase()
+        .split(",")[0]  // drop city/state/zip
+        .replace(/\b(ST|AVE|BLVD|DR|LN|RD|CT|CIR|PL|WAY|TER|TRL|PKWY|HWY)\b.*$/, "") // drop street suffix+
+        .trim()
+
+    if (!streetKey) return []
 
     const { data: users } = await supabase
         .schema("next_auth")
         .from("users")
-        .select("id, name, image, latitude, longitude")
+        .select("id, name, image, address")
         .neq("id", session.user.id)
         .eq("address_verified", true)
-        .gte("latitude", myLat - latDelta)
-        .lte("latitude", myLat + latDelta)
-        .gte("longitude", myLng - lngDelta)
-        .lte("longitude", myLng + lngDelta)
+        .ilike("address", `%${streetKey.split(" ").slice(0, 3).join(" ")}%`)
 
     if (!users) return []
 
-    // Refine with Haversine and sort alphabetically (not by distance for privacy)
     return users
-        .filter(u => u.latitude && u.longitude &&
-            haversineDistance(myLat, myLng, u.latitude, u.longitude) <= 1
-        )
         .sort((a, b) => (a.name || "").localeCompare(b.name || ""))
         .map(u => ({ id: u.id, name: u.name, image: u.image }))
 }

@@ -18,10 +18,11 @@ const nextConfig: NextConfig = {
         // Add your production domain here before deploying, e.g.:
         // 'verifeye.vercel.app',
       ],
+      bodySizeLimit: '5mb',
     },
     serverComponentsExternalPackages: ['tesseract.js'],
   },
-  reactCompiler: true,
+  reactCompiler: true, 
 };
 
 export default nextConfig;

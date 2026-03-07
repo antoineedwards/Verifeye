@@ -192,14 +192,28 @@ export async function verifyUserDocument(formData: FormData) {
       let latitude: number | null = null;
       let longitude: number | null = null;
       try {
-        const geocodeRes = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(targetAddress)}&limit=1`,
-          { headers: { "User-Agent": "Verifeye-App/1.0" } }
-        );
-        const geocodeData = await geocodeRes.json();
-        if (geocodeData.length > 0) {
-          latitude = parseFloat(geocodeData[0].lat);
-          longitude = parseFloat(geocodeData[0].lon);
+        // Try multiple query variants to maximize geocoding success
+        const geoQueries = [
+          targetAddress,                                          // Full address as-is
+          targetAddress.replace(/\s+/g, " ").trim(),             // Cleaned whitespace
+        ];
+
+        for (const query of geoQueries) {
+          const geocodeRes = await fetch(
+            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1&countrycodes=us`,
+            { headers: { "User-Agent": "Verifeye-App/1.0 (verifeye@app.com)" } }
+          );
+          const geocodeData = await geocodeRes.json();
+          if (geocodeData.length > 0) {
+            latitude = parseFloat(geocodeData[0].lat);
+            longitude = parseFloat(geocodeData[0].lon);
+            console.log(`Geocoded "${query}" → lat:${latitude}, lng:${longitude}`);
+            break;
+          }
+        }
+
+        if (latitude === null || longitude === null) {
+          console.warn(`⚠️ Geocoding returned no results for address: "${targetAddress}". Proximity messaging will not work for this user until their coordinates are updated.`);
         }
       } catch (geoErr) {
         console.warn("Geocoding failed (non-blocking):", geoErr);
