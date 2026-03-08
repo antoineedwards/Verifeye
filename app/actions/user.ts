@@ -43,6 +43,63 @@ export async function getUserProfile() {
     return user
 }
 
+export async function getNeighborhoodLabel(): Promise<string> {
+    const session = await auth()
+    if (!session?.user?.id) return "Your Neighborhood"
+
+    const { data: user } = await supabase
+        .schema("next_auth")
+        .from("users")
+        .select("latitude, longitude, address")
+        .eq("id", session.user.id)
+        .single()
+
+    if (!user) return "Your Neighborhood"
+
+    // Path A: Reverse geocode using lat/lng (most accurate)
+    if (user.latitude && user.longitude) {
+        try {
+            const res = await fetch(
+                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${user.latitude}&lon=${user.longitude}`,
+                { headers: { "User-Agent": "Verifeye-App/1.0" }, next: { revalidate: 3600 } }
+            )
+            const data = await res.json()
+            const addr = data?.address
+            if (addr) {
+                // Pick the most specific human-readable neighborhood label available
+                const label =
+                    addr.neighbourhood ||
+                    addr.suburb ||
+                    addr.city_district ||
+                    addr.quarter ||
+                    addr.village ||
+                    addr.town ||
+                    addr.city
+                if (label) {
+                    const state = addr.state_code || addr.state || ""
+                    return state ? `${label}, ${state}` : label
+                }
+            }
+        } catch (err) {
+            console.warn("Reverse geocode failed:", err)
+        }
+    }
+
+    // Path B: Parse city from stored address string
+    // Format: "street[, line2], city, state zip"
+    if (user.address) {
+        const parts = user.address.split(",").map((p: string) => p.trim()).filter(Boolean)
+        if (parts.length >= 2) {
+            // City is second-to-last, state+zip is last
+            const city = parts[parts.length - 2]
+            const statePart = parts[parts.length - 1].split(" ")[0] // "AL" from "AL 36104"
+            return statePart ? `${city}, ${statePart}` : city
+        }
+    }
+
+    return "Your Neighborhood"
+}
+
 export async function awardPoints(userId: string, amount: number) {
     // Verify the caller is authenticated and matches the target user
     const session = await auth()
