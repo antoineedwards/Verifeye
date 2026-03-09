@@ -48,110 +48,114 @@ export function IncidentDetails({ onPost, onBack }: IncidentDetailsProps) {
     };
 
     return (
-        <div className="flex flex-col h-full p-6 bg-background">
-            <Button variant="ghost" onClick={onBack} className="self-start -ml-4 mb-4">
-                ← Back
-            </Button>
+        <div className="flex flex-col h-full bg-background">
+            {/* Scrollable content */}
+            <div className="flex-1 overflow-y-auto p-6 pb-4">
+                <Button variant="ghost" onClick={onBack} className="self-start -ml-4 mb-4">
+                    ← Back
+                </Button>
 
-            <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="flex-1 flex flex-col space-y-6 overflow-auto"
-            >
-                <div className="space-y-2">
-                    <h2 className="text-2xl font-bold tracking-tight">Add Details</h2>
-                    <p className="text-muted-foreground">
-                        Describe what happened. Photos and videos help verify your report.
-                    </p>
-                </div>
-
-                <div className="space-y-4">
-                    <Input
-                        placeholder="Title (e.g., Pothole on Main St)"
-                        className="text-lg h-12"
-                        value={title}
-                        onChange={(e) => setTitle(e.target.value)}
-                    />
-                    <Textarea
-                        placeholder="Describe the incident..."
-                        className="h-32 resize-none text-lg"
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)}
-                    />
-
-                    {/* Hidden file inputs */}
-                    <input
-                        ref={cameraInputRef}
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
-                        capture="environment"
-                        className="hidden"
-                        onChange={(e) => handleFileSelect(e.target.files?.[0])}
-                    />
-                    <input
-                        ref={galleryInputRef}
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
-                        className="hidden"
-                        onChange={(e) => handleFileSelect(e.target.files?.[0])}
-                    />
-
-                    <div className="flex gap-4">
-                        <Button
-                            variant="outline"
-                            className="flex-1 h-24 flex-col gap-2"
-                            onClick={() => cameraInputRef.current?.click()}
-                        >
-                            <Camera className="h-6 w-6" />
-                            <span className="text-xs">Photo</span>
-                        </Button>
-                        <Button
-                            variant="outline"
-                            className="flex-1 h-24 flex-col gap-2"
-                            onClick={() => galleryInputRef.current?.click()}
-                        >
-                            <ImageIcon className="h-6 w-6" />
-                            <span className="text-xs">Gallery</span>
-                        </Button>
-                        <Button variant="outline" className="flex-1 h-24 flex-col gap-2">
-                            <Mic className="h-6 w-6" />
-                            <span className="text-xs">Voice</span>
-                        </Button>
+                <motion.div
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="flex flex-col space-y-6"
+                >
+                    <div className="space-y-2">
+                        <h2 className="text-2xl font-bold tracking-tight">Add Details</h2>
+                        <p className="text-muted-foreground">
+                            Describe what happened. Photos and videos help verify your report.
+                        </p>
                     </div>
 
-                    {/* Image Preview */}
-                    <AnimatePresence>
-                        {imagePreview && (
-                            <motion.div
-                                initial={{ opacity: 0, scale: 0.95 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.95 }}
-                                className="relative rounded-xl overflow-hidden border border-border"
+                    <div className="space-y-4">
+                        <Input
+                            placeholder="Title (e.g., Pothole on Main St)"
+                            className="text-lg h-12"
+                            value={title}
+                            onChange={(e) => setTitle(e.target.value)}
+                        />
+                        <Textarea
+                            placeholder="Describe the incident..."
+                            className="h-32 resize-none text-lg"
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                        />
+
+                        {/* Hidden file inputs */}
+                        <input
+                            ref={cameraInputRef}
+                            type="file"
+                            accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+                            capture="environment"
+                            className="hidden"
+                            onChange={(e) => handleFileSelect(e.target.files?.[0])}
+                        />
+                        <input
+                            ref={galleryInputRef}
+                            type="file"
+                            accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+                            className="hidden"
+                            onChange={(e) => handleFileSelect(e.target.files?.[0])}
+                        />
+
+                        <div className="flex gap-4">
+                            <Button
+                                variant="outline"
+                                className="flex-1 h-24 flex-col gap-2"
+                                onClick={() => cameraInputRef.current?.click()}
                             >
-                                <Image
-                                    src={imagePreview}
-                                    alt="Selected photo"
-                                    width={400}
-                                    height={192}
-                                    className="w-full h-48 object-cover"
-                                    unoptimized
-                                />
-                                <button
-                                    onClick={removeImage}
-                                    className="absolute top-2 right-2 bg-black/60 hover:bg-black/80 text-white rounded-full p-1.5 transition-colors"
+                                <Camera className="h-6 w-6" />
+                                <span className="text-xs">Photo</span>
+                            </Button>
+                            <Button
+                                variant="outline"
+                                className="flex-1 h-24 flex-col gap-2"
+                                onClick={() => galleryInputRef.current?.click()}
+                            >
+                                <ImageIcon className="h-6 w-6" />
+                                <span className="text-xs">Gallery</span>
+                            </Button>
+                            <Button variant="outline" className="flex-1 h-24 flex-col gap-2">
+                                <Mic className="h-6 w-6" />
+                                <span className="text-xs">Voice</span>
+                            </Button>
+                        </div>
+
+                        {/* Image Preview */}
+                        <AnimatePresence>
+                            {imagePreview && (
+                                <motion.div
+                                    initial={{ opacity: 0, scale: 0.95 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    exit={{ opacity: 0, scale: 0.95 }}
+                                    className="relative rounded-xl overflow-hidden border border-border"
                                 >
-                                    <X className="h-4 w-4" />
-                                </button>
-                                <div className="absolute bottom-2 left-2 bg-black/60 text-white text-xs px-2 py-1 rounded-md">
-                                    {imageFile?.name}
-                                </div>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-                </div>
+                                    <Image
+                                        src={imagePreview}
+                                        alt="Selected photo"
+                                        width={400}
+                                        height={192}
+                                        className="w-full h-48 object-cover"
+                                        unoptimized
+                                    />
+                                    <button
+                                        onClick={removeImage}
+                                        className="absolute top-2 right-2 bg-black/60 hover:bg-black/80 text-white rounded-full p-1.5 transition-colors"
+                                    >
+                                        <X className="h-4 w-4" />
+                                    </button>
+                                    <div className="absolute bottom-2 left-2 bg-black/60 text-white text-xs px-2 py-1 rounded-md">
+                                        {imageFile?.name}
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
+                </motion.div>
+            </div>
 
-                <div className="flex-1" />
-
+            {/* Sticky Post Report button — always visible at bottom */}
+            <div className="p-4 pt-2 border-t bg-background">
                 <Button
                     onClick={() => onPost({ title, description, image: imageFile || undefined })}
                     disabled={!title.trim() || !description.trim()}
@@ -159,7 +163,7 @@ export function IncidentDetails({ onPost, onBack }: IncidentDetailsProps) {
                 >
                     Post Report
                 </Button>
-            </motion.div>
+            </div>
         </div>
     );
 }

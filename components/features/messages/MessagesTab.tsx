@@ -73,7 +73,7 @@ export function MessagesTab({ onOpenChat }: MessagesTabProps) {
     }
 
     return (
-        <div className="h-full overflow-y-auto pb-20">
+        <div className="h-full overflow-y-auto pb-[calc(5rem+env(safe-area-inset-bottom))]">
             <div className="p-4 space-y-6">
                 {/* Nearby Users */}
                 <div>

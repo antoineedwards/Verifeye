@@ -18,7 +18,9 @@ export default function Home() {
   }, [status, session, router]);
 
   if (status === "loading") {
-    return <div>Loading...</div>; // Optional loading state
+    return <div
+      className="h-dvh w-full max-w-md mx-auto bg-background overflow-hidden relative shadow-xl"
+    >Loading...</div>; // Optional loading state
   }
 
   // If authenticated, return null while redirecting
@@ -28,8 +30,8 @@ export default function Home() {
 
   // Show welcome screen for unauthenticated users
   return (
-    <main className="min-h-screen bg-background">
-      <div className="h-screen w-full max-w-md mx-auto bg-background overflow-hidden relative shadow-xl">
+    <main className="min-h-dvh bg-background">
+      <div className="h-dvh w-full max-w-md mx-auto bg-background overflow-hidden relative shadow-xl">
         <WelcomeScreen onNext={() => router.push("/onboarding")} />
       </div>
     </main>

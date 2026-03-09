@@ -134,7 +134,7 @@ export function IncidentReportingFlow() {
     const showHeader = step === "home" || step === "community" || step === "resources" || step === "messages";
 
     return (
-        <div className="h-screen w-full max-w-md mx-auto bg-background overflow-hidden relative shadow-xl flex flex-col">
+        <div className="h-dvh w-full max-w-md mx-auto bg-background overflow-hidden relative shadow-xl flex flex-col">
             {showHeader && <AppHeader />}
 
             <div className="flex-1 relative overflow-hidden">

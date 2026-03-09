@@ -14,9 +14,7 @@ export function WelcomeScreen({ onNext: _onNext }: WelcomeScreenProps) {
     const router = useRouter();
 
     const handleEmailSignUp = () => {
-        // Bypass onboarding and push to the main app route
-        // Replace "/dashboard" with whatever your main app route is (e.g., "/map" or "/home")
-        router.push("/onboarding");
+        router.push("/signup");
     };
 
     return (

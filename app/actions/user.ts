@@ -28,6 +28,58 @@ export async function saveUserAddress(address: string) {
     return { success: !error }
 }
 
+export async function saveUserAddressById(userId: string, address: string) {
+    const { error } = await supabase
+        .schema("next_auth")
+        .from("users")
+        .update({ address: toTitleCase(address) })
+        .eq("id", userId)
+
+    return { success: !error }
+}
+
+export async function createEmailUser({
+    email,
+    name,
+    phone,
+}: {
+    email: string;
+    name: string;
+    phone?: string;
+}): Promise<{ success: boolean; userId?: string; error?: string }> {
+    // Check if a user with this email already exists
+    const { data: existing } = await supabase
+        .schema("next_auth")
+        .from("users")
+        .select("id")
+        .eq("email", email.toLowerCase().trim())
+        .maybeSingle();
+
+    if (existing) {
+        return { success: false, error: "An account with this email already exists." };
+    }
+
+    const userId = crypto.randomUUID();
+
+    const { error: insertError } = await supabase
+        .schema("next_auth")
+        .from("users")
+        .insert({
+            id: userId,
+            email: email.toLowerCase().trim(),
+            name: toTitleCase(name.trim()),
+            //phone: phone?.trim() ?? null,
+            emailVerified: null,
+        });
+
+    if (insertError) {
+        console.error("createEmailUser error:", insertError);
+        return { success: false, error: "Failed to create account. Please try again." };
+    }
+
+    return { success: true, userId };
+}
+
 export async function getUserProfile() {
     const session = await auth()
     if (!session?.user?.id) return null

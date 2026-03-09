@@ -32,7 +32,7 @@ export function OnboardingFlow({ onComplete, initialStep }: OnboardingFlowProps)
     const nextStep = (next: OnboardingStep) => setStep(next);
 
     return (
-        <div className="h-screen w-full max-w-md mx-auto bg-background overflow-hidden relative shadow-xl">
+        <div className="h-dvh w-full max-w-md mx-auto bg-background overflow-hidden relative shadow-xl">
             <AnimatePresence mode="wait">
                 <motion.div
                     key={step}
@@ -47,7 +47,7 @@ export function OnboardingFlow({ onComplete, initialStep }: OnboardingFlowProps)
                     )}
                     {step === "geofence" && (
                         <GeofenceLocator
-                            onNext={() => nextStep("document-upload")}
+                            onNext={onComplete} // DEMO: bypass doc-upload, go straight to dashboard
                             onBack={() => nextStep("welcome")}
                             onAddressReady={(address) => setPendingAddress(address)}
                         />
