@@ -1,29 +1,30 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { motion } from "framer-motion";
 import { GeofenceLocator } from "@/components/features/onboarding/GeofenceLocator";
-import { saveUserAddressById } from "@/app/actions/user";
+import { saveUserAddress } from "@/app/actions/user";
 
 export default function SignUpAddressPage() {
+    const { update } = useSession();
     const router = useRouter();
 
     const handleAddressReady = async (address: string) => {
         try {
-            const userId = localStorage.getItem("pendingUserId");
-            if (userId) {
-                await saveUserAddressById(userId, address);
-            }
+            await saveUserAddress(address);
         } catch (err) {
             // Non-blocking — the user can still access the dashboard
             console.warn("Could not save address:", err);
         }
     };
 
-    const handleComplete = () => {
-        // Navigate first — onboarding page reads pendingUserId on mount,
-        // so we must NOT clear it here. The onboarding page will clean it up.
-        router.push("/onboarding");
+    const handleComplete = async () => {
+        // Attempt to refresh the JWT with the new address in the background.
+        // We also pass ?setup=true so the onboarding page immediately grants
+        // access regardless of whether the JWT update finishes in time.
+        update(); // fire-and-forget — don't await
+        window.location.href = "/onboarding?setup=true";
     };
 
     return (

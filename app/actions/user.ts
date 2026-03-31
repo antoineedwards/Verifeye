@@ -1,6 +1,6 @@
 "use server"
 import { createClient } from "@supabase/supabase-js"
-import { auth } from "@/auth"
+import { auth, signIn } from "@/auth"
 
 const supabase = createClient(
     process.env.SUPABASE_URL!,
@@ -78,6 +78,15 @@ export async function createEmailUser({
     }
 
     return { success: true, userId };
+}
+
+export async function signInEmailUser(email: string) {
+    await signIn("credentials", {
+        email: email.toLowerCase().trim(),
+        // redirect: false won't work with database sessions — NextAuth handles
+        // the redirect itself. We use redirectTo to send them to /signup/address.
+        redirectTo: "/signup/address",
+    })
 }
 
 export async function getUserProfile() {

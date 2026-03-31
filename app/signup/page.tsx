@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,13 +46,14 @@ export default function SignUpPage() {
                 return;
             }
 
-            // Store userId in localStorage so the address step can save the address
-            if (result.userId) {
-                localStorage.setItem("pendingUserId", result.userId);
-                localStorage.setItem("pendingUserEmail", formData.email.toLowerCase().trim());
-            }
-
-            router.push("/signup/address");
+            // Use the client-side signIn — this POSTs to NextAuth's
+            // /api/auth/callback/credentials endpoint, which is the most
+            // reliable way to create a session with the Credentials provider.
+            await signIn("credentials", {
+                email: formData.email.toLowerCase().trim(),
+                callbackUrl: "/signup/address",
+            });
+            // signIn with callbackUrl handles the redirect itself.
         } catch {
             setError("Unable to connect. Please try again.");
         } finally {

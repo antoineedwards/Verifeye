@@ -61,7 +61,7 @@ const US_STATES = [
 interface GeofenceLocatorProps {
     onNext: () => void;
     onBack: () => void;
-    onAddressReady: (address: string) => void;
+    onAddressReady: (address: string) => Promise<void> | void;
 }
 
 export function GeofenceLocator({ onNext, onBack, onAddressReady }: GeofenceLocatorProps) {
@@ -73,6 +73,7 @@ export function GeofenceLocator({ onNext, onBack, onAddressReady }: GeofenceLoca
         zip: ""
     });
     const [isLoading, setIsLoading] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
     const [mapCenter, setMapCenter] = useState<[number, number]>([32.3668, -86.3000]);
 
     // Dynamically import the map component to avoid SSR issues
@@ -190,17 +191,23 @@ export function GeofenceLocator({ onNext, onBack, onAddressReady }: GeofenceLoca
                 </div>
 
                 <Button
-                    disabled={!isFormValid || isLoading}
+                    disabled={!isFormValid || isLoading || isSaving}
                     className="w-full h-12 text-lg mt-4"
-                    onClick={() => {
-                        // Build the full address and pass it up — NO database write here
+                    onClick={async () => {
+                        // Build the full address string
                         const { line1, line2, city, state, zip } = formData;
                         const fullAddress = `${line1}${line2 ? `, ${line2}` : ""}, ${city}, ${state} ${zip}`;
-                        onAddressReady(fullAddress);
+                        // Await the address save BEFORE navigating away
+                        setIsSaving(true);
+                        try {
+                            await onAddressReady(fullAddress);
+                        } finally {
+                            setIsSaving(false);
+                        }
                         onNext();
                     }}
                 >
-                    Continue
+                    {isSaving ? <Loader2 className="h-5 w-5 animate-spin" /> : "Continue"}
                 </Button>
             </motion.div>
         </div>

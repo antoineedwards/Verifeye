@@ -28,10 +28,6 @@ const guidelines = [
         text: "Avoid reporting based on race, ethnicity, or perceived status; stick to objective facts.",
     },
     {
-        icon: Camera,
-        text: "Avoid capturing clear faces of bystanders or victims unless it is critical for documenting the hazard or event.",
-    },
-    {
         icon: Globe,
         text: "Always remember this is a public space and anyone may see your posts or comments.",
     },

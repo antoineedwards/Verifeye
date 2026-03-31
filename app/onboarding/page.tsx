@@ -1,54 +1,43 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, Suspense } from "react";
 import { useSession } from "next-auth/react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { OnboardingFlow } from "@/components/features/onboarding/OnboardingFlow";
 import { IncidentReportingFlow } from "@/components/features/safety/IncidentReportingFlow";
-import { useRouter } from "next/navigation";
 
 interface SessionUser {
     address?: string;
 }
 
-export default function OnboardingPage() {
+function OnboardingContent() {
     const { data: session, status } = useSession();
     const router = useRouter();
-    const [manuallyVerified, setManuallyVerified] = useState(false);
-    // DEMO: email sign-up users won't have a NextAuth session yet — treat them as verified
-    const [emailSignUpUser, setEmailSignUpUser] = useState<boolean | null>(null); // null = not yet checked
+    const searchParams = useSearchParams();
+
+    // ?setup=true is appended by the signup/address page after the user saves
+    // their address. It immediately grants access without waiting for the JWT
+    // to refresh with the new address value.
+    const [manuallyVerified, setManuallyVerified] = useState(
+        searchParams.get("setup") === "true"
+    );
 
     useEffect(() => {
-        if (typeof window !== "undefined") {
-            const pendingId = localStorage.getItem("pendingUserId");
-            setEmailSignUpUser(!!pendingId);
-            // NOTE: We intentionally do NOT remove pendingUserId here.
-            // React Strict Mode double-invokes effects in development — if we
-            // removed the key on the first run, the second run would find it
-            // missing, set emailSignUpUser=false, and trigger the redirect to "/".
-        }
-    }, []);
-
-    // Move redirect into a useEffect so it never fires during render
-    useEffect(() => {
-        if (emailSignUpUser === null) return; // still checking localStorage
-        if (status === "unauthenticated" && !emailSignUpUser) {
+        if (status === "unauthenticated") {
             router.push("/");
         }
-    }, [status, emailSignUpUser, router]);
+    }, [status, router]);
 
     const isVerified = useMemo(() => {
         if (manuallyVerified) return true;
-        if (emailSignUpUser) return true;
         return !!(session?.user as SessionUser)?.address;
-    }, [session, manuallyVerified, emailSignUpUser]);
+    }, [session, manuallyVerified]);
 
-    // Wait until we know whether this is an email sign-up user before rendering anything
-    if (emailSignUpUser === null || (status === "loading" && !emailSignUpUser)) {
+    if (status === "loading") {
         return <div className="h-dvh w-full max-w-md mx-auto bg-background" />;
     }
 
-    // If unauthenticated and not email sign-up, show nothing while redirecting
-    if (status === "unauthenticated" && !emailSignUpUser) {
+    if (status === "unauthenticated") {
         return null;
     }
 
@@ -69,5 +58,14 @@ export default function OnboardingPage() {
         <main className="min-h-dvh bg-background">
             <IncidentReportingFlow />
         </main>
+    );
+}
+
+// useSearchParams() requires a Suspense boundary in Next.js
+export default function OnboardingPage() {
+    return (
+        <Suspense fallback={<div className="h-dvh w-full max-w-md mx-auto bg-background" />}>
+            <OnboardingContent />
+        </Suspense>
     );
 }
