@@ -32,14 +32,28 @@ export function LocationConfirmation({ onConfirm, onBack }: LocationConfirmation
         }
     ), []);
 
-    // On mount: geocode the user's saved address to center the map there
+    // On mount: center the map on the user's saved address.
+    // Priority 1: stored lat/lng (instant, no geocoding needed).
+    // Priority 2: geocode the address string as a fallback.
     useEffect(() => {
         const initializeMap = async () => {
             try {
                 const profile = await getUserProfile();
+
+                // Priority 1 — use stored coordinates directly
+                if (profile?.latitude && profile?.longitude) {
+                    const lat = profile.latitude as number;
+                    const lng = profile.longitude as number;
+                    setMapCenter([lat, lng]);
+                    setPinPosition({ lat, lng });
+                    if (profile.address) setAddress(profile.address);
+                    return;
+                }
+
+                // Priority 2 — geocode the address string
                 if (profile?.address) {
                     const response = await fetch(
-                        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(profile.address)}`
+                        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(profile.address)}&limit=1`
                     );
                     const data = await response.json();
                     if (data && data.length > 0) {
@@ -51,7 +65,7 @@ export function LocationConfirmation({ onConfirm, onBack }: LocationConfirmation
                     }
                 }
             } catch (error) {
-                console.error("Failed to geocode user address:", error);
+                console.error("Failed to initialize map from user address:", error);
             } finally {
                 setIsInitializing(false);
             }

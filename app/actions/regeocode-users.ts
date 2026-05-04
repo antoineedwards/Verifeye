@@ -52,12 +52,12 @@ export async function regeocodeVerifiedUsers(): Promise<{
     fixed: number
     failed: string[]
 }> {
-    // Get all verified users missing lat/lng
+    // Get all users who have an address but are missing lat/lng
     const { data: users, error } = await supabase
         .schema("next_auth")
         .from("users")
         .select("id, address")
-        .eq("address_verified", true)
+        .not("address", "is", null)
         .or("latitude.is.null,longitude.is.null")
 
     if (error || !users) {

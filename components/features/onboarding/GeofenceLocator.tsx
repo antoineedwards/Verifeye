@@ -74,7 +74,8 @@ export function GeofenceLocator({ onNext, onBack, onAddressReady }: GeofenceLoca
     });
     const [isLoading, setIsLoading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
-    const [mapCenter, setMapCenter] = useState<[number, number]>([32.3668, -86.3000]);
+    const [mapCenter, setMapCenter] = useState<[number, number]>([39.8283, -98.5795]); // Geographic center of USA
+    const [mapZoom, setMapZoom] = useState(4); // Zoomed out to show full USA
 
     // Dynamically import the map component to avoid SSR issues
     const Map = useMemo(() => dynamic(
@@ -98,6 +99,7 @@ export function GeofenceLocator({ onNext, onBack, onAddressReady }: GeofenceLoca
                     const data = await response.json();
                     if (data && data.length > 0) {
                         setMapCenter([parseFloat(data[0].lat), parseFloat(data[0].lon)]);
+                        setMapZoom(15); // Zoom into the address once found
                     }
                 } catch (error) {
                     console.error("Geocoding error:", error);
@@ -186,7 +188,7 @@ export function GeofenceLocator({ onNext, onBack, onAddressReady }: GeofenceLoca
                                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
                             </div>
                         )}
-                        <Map center={mapCenter} zoom={14} />
+                        <Map center={mapCenter} zoom={mapZoom} />
                     </div>
                 </div>
 

@@ -1,0 +1,20 @@
+name: Keep Supabase Alive
+
+on:
+  schedule:
+    # Runs at 00:00 UTC every Monday, Wednesday, and Friday
+    - cron: '0 0 * * 1,3,5'
+  workflow_dispatch: # Allows you to trigger the workflow manually from the Actions tab
+
+jobs:
+  ping-supabase:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase REST API
+        run: |
+          # Make a simple GET request to the Supabase project to register activity
+          curl -s -X GET "${{ secrets.SUPABASE_URL }}/rest/v1/" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}"
+          
+          echo "Successfully pinged Supabase!"

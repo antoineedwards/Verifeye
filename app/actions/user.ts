@@ -15,24 +15,50 @@ function toTitleCase(str: string): string {
     }).join(' ');
 }
 
+async function geocodeAddress(address: string): Promise<{ lat: number; lng: number } | null> {
+    try {
+        const res = await fetch(
+            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`,
+            { headers: { "User-Agent": "Verifeye-App/1.0" } }
+        )
+        const data = await res.json()
+        if (data?.[0]) {
+            return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) }
+        }
+    } catch {
+        // Geocoding is best-effort; caller will still save the address string
+    }
+    return null
+}
+
 export async function saveUserAddress(address: string) {
     const session = await auth()
     if (!session?.user?.id) throw new Error("Unauthorized")
 
+    const coords = await geocodeAddress(address)
+
     const { error } = await supabase
-        .schema("next_auth") // Important: specify the schema
+        .schema("next_auth")
         .from("users")
-        .update({ address: toTitleCase(address) })
+        .update({
+            address: toTitleCase(address),
+            ...(coords ? { latitude: coords.lat, longitude: coords.lng } : {})
+        })
         .eq("id", session.user.id)
 
     return { success: !error }
 }
 
 export async function saveUserAddressById(userId: string, address: string) {
+    const coords = await geocodeAddress(address)
+
     const { error } = await supabase
         .schema("next_auth")
         .from("users")
-        .update({ address: toTitleCase(address) })
+        .update({
+            address: toTitleCase(address),
+            ...(coords ? { latitude: coords.lat, longitude: coords.lng } : {})
+        })
         .eq("id", userId)
 
     return { success: !error }
@@ -96,7 +122,7 @@ export async function getUserProfile() {
     const { data: user, error } = await supabase
         .schema("next_auth")
         .from("users")
-        .select("id, name, email, image, address, level, points")
+        .select("id, name, email, image, address, level, points, latitude, longitude")
         .eq("id", session.user.id)
         .single()
 

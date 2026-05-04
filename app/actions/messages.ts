@@ -79,7 +79,7 @@ export async function getNearbyUsers(): Promise<NearbyUser[]> {
             .from("users")
             .select("id, name, image, latitude, longitude")
             .neq("id", session.user.id)
-            .eq("address_verified", true)
+            //.eq("address_verified", true)
             .gte("latitude", myLat - latDelta)
             .lte("latitude", myLat + latDelta)
             .gte("longitude", myLng - lngDelta)
@@ -114,7 +114,7 @@ export async function getNearbyUsers(): Promise<NearbyUser[]> {
         .from("users")
         .select("id, name, image, address")
         .neq("id", session.user.id)
-        .eq("address_verified", true)
+        //.eq("address_verified", true)
         .ilike("address", `%${streetKey.split(" ").slice(0, 3).join(" ")}%`)
 
     if (!users) return []
