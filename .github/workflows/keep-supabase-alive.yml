@@ -13,7 +13,7 @@ jobs:
       - name: Ping Supabase REST API
         run: |
           # Make a simple GET request to the Supabase project to register activity
-          curl -s -X GET "${{ secrets.SUPABASE_URL }}/rest/v1/" \
+          curl -s -X GET "${{ secrets.SUPABASE_URL }}/rest/v1/community_posts?select=id&limit=1" \
             -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
             -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}"
           
