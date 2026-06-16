@@ -10,11 +10,35 @@ jobs:
   ping-supabase:
     runs-on: ubuntu-latest
     steps:
-      - name: Ping Supabase REST API
+      - name: Keep Supabase Alive (Insert & Delete)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
-          # Make a simple GET request to the Supabase project to register activity
-          curl -s -X GET "${{ secrets.SUPABASE_URL }}/rest/v1/community_posts?select=id&limit=1" \
-            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
-            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}"
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+            echo "::error::Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY secret. Please add them in your GitHub Repository Secrets."
+            exit 1
+          fi
           
-          echo "Successfully pinged Supabase!"
+          echo "Inserting dummy post into community_posts..."
+          RESPONSE=$(curl -s -X POST "$SUPABASE_URL/rest/v1/community_posts" \
+            -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+            -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: return=representation" \
+            -d '{"title": "Keep Alive Ping", "content": "This is a dummy post to keep the DB alive", "type": "general"}')
+          
+          POST_ID=$(echo "$RESPONSE" | jq -r '.[0].id')
+          
+          if [ "$POST_ID" != "null" ] && [ -n "$POST_ID" ]; then
+            echo "Successfully inserted post with ID: $POST_ID"
+            echo "Deleting the dummy post to clean up..."
+            curl -s -X DELETE "$SUPABASE_URL/rest/v1/community_posts?id=eq.$POST_ID" \
+              -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+              -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY"
+            echo "Successfully deleted dummy post! Database activity registered."
+          else
+            echo "::error::Failed to insert post. Response from Supabase: $RESPONSE"
+            exit 1
+          fi
+
